@@ -8,10 +8,17 @@ class MQTTHandler:
     Xử lý kết nối MQTT với ESP32
     """
     
-    def __init__(self, broker_address='localhost', port=1883):
+    def __init__(self, broker_address='caa7699a09b24a26b5b945f5db6af243.s1.eu.hivemq.cloud', port=8883):
         self.broker_address = broker_address
         self.port = port
         self.client = mqtt.Client(client_id='chatbot-server')
+        
+        # Thiết lập TLS cho HiveMQ Cloud
+        self.client.tls_set(ca_certs=None, certfile=None, keyfile=None, cert_reqs=mqtt.ssl.CERT_REQUIRED, tls_version=mqtt.ssl.PROTOCOL_TLSv1_2, ciphers=None)
+        self.client.tls_insecure_set(False)
+        
+        # Thiết lập username/password
+        self.client.username_pw_set('mqtt-backend', 'Test1234')
         
         # Thiết lập callbacks
         self.client.on_connect = self.on_connect

@@ -15,10 +15,10 @@ const char* ssid = "YOUR_WIFI_SSID";           // Thay bằng SSID WiFi của b�
 const char* password = "YOUR_WIFI_PASSWORD";   // Thay bằng password WiFi
 
 // ============ MQTT Configuration ============
-const char* mqtt_server = "192.168.1.100";     // Thay bằng IP MQTT broker
-const int mqtt_port = 1883;
-const char* mqtt_user = "";                    // Để trống nếu không có auth
-const char* mqtt_password = "";
+const char* mqtt_server = "caa7699a09b24a26b5b945f5db6af243.s1.eu.hivemq.cloud";
+const int mqtt_port = 8883;  // TLS port
+const char* mqtt_user = "mqtt-backend";
+const char* mqtt_password = "Test1234";
 
 // ============ Pinouts ============
 #define LIGHT_LIVING_ROOM_PIN 5       // GPIO5 - Đèn phòng khách
