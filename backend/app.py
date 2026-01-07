@@ -7,6 +7,7 @@ import numpy as np
 from backend.chatbot import Chatbot
 from backend.constants import APP_HOST, APP_PORT, DEBUG, CORS_ORIGINS
 from nlp.pipeline import NLPPipeline
+from backend.mqtt_handler import get_mqtt_handler, init_mqtt
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -17,6 +18,7 @@ CORS(app, resources={r"/.*": {"origins": CORS_ORIGINS}})
 # Initialize components
 chatbot = Chatbot()
 nlp_pipeline = NLPPipeline()
+mqtt_handler = None
 
 # Initialize MongoDB connection and services
 chat_service = None
@@ -33,6 +35,19 @@ except Exception as e:
     print(f"⚠️  MongoDB connection warning: {e}")
     print("💡 Chat history will not be saved (make sure MongoDB is running)")
     chat_service = None
+
+# Initialize MQTT connection
+try:
+    mqtt_handler = get_mqtt_handler()
+    if init_mqtt():
+        print("✅ MQTT initialized successfully")
+    else:
+        print("⚠️  MQTT connection failed")
+        mqtt_handler = None
+except Exception as e:
+    print(f"⚠️  MQTT connection warning: {e}")
+    print("💡 Device control will not be available (make sure MQTT broker is running)")
+    mqtt_handler = None
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -312,6 +327,139 @@ def get_stats(user_id):
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ============================================================
+# DEVICE CONTROL ENDPOINTS (Smart Home)
+# ============================================================
+
+@app.route('/device/command', methods=['POST'])
+def send_device_command():
+    """
+    Gửi lệnh điều khiển thiết bị đến ESP32 qua MQTT
+    Request: {"type": "light|ac|ac_temp", "location": "living_room|bedroom|bathroom", "value": true/false or temperature}
+    """
+    try:
+        if not mqtt_handler or not mqtt_handler.is_connected:
+            return jsonify({
+                'success': False,
+                'message': 'MQTT không kết nối'
+            }), 503
+        
+        data = request.get_json()
+        
+        if not data or 'type' not in data or 'location' not in data or 'value' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Missing required fields: type, location, value'
+            }), 400
+        
+        device_type = data['type']  # light, ac, ac_temp
+        location = data['location']  # living_room, bedroom, bathroom
+        value = data['value']  # true/false or temperature
+        
+        # Validate location
+        valid_locations = ['living_room', 'bedroom', 'bathroom']
+        if location not in valid_locations:
+            return jsonify({
+                'success': False,
+                'message': f'Invalid location. Must be one of: {valid_locations}'
+            }), 400
+        
+        # Send command via MQTT
+        result = mqtt_handler.send_command(device_type, location, value)
+        
+        if result:
+            return jsonify({
+                'success': True,
+                'message': f'Lệnh điều khiển gửi thành công',
+                'type': device_type,
+                'location': location,
+                'value': value
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Gửi lệnh không thành công'
+            }), 500
+    
+    except Exception as e:
+        print(f"❌ Device command error: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/devices/status', methods=['GET'])
+def get_devices_status():
+    """
+    Lấy trạng thái của tất cả các thiết bị
+    Response: {"devices": {"lights": {...}, "ac": {...}}}
+    """
+    try:
+        if not mqtt_handler:
+            return jsonify({
+                'success': False,
+                'message': 'MQTT handler not available'
+            }), 503
+        
+        devices = mqtt_handler.get_device_states()
+        
+        return jsonify({
+            'success': True,
+            'devices': devices,
+            'mqtt_connected': mqtt_handler.is_connected
+        }), 200
+    
+    except Exception as e:
+        print(f"❌ Get devices status error: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/sensors/data', methods=['GET'])
+def get_sensors_data():
+    """
+    Lấy dữ liệu từ các cảm biến (Nhiệt độ, Độ ẩm, Ánh sáng)
+    Response: {"sensors": {"temperature": 25.5, "humidity": 60.2, "light": 300}}
+    """
+    try:
+        if not mqtt_handler:
+            return jsonify({
+                'success': False,
+                'message': 'MQTT handler not available'
+            }), 503
+        
+        sensors = mqtt_handler.get_sensor_data()
+        
+        return jsonify({
+            'success': True,
+            'sensors': sensors,
+            'mqtt_connected': mqtt_handler.is_connected
+        }), 200
+    
+    except Exception as e:
+        print(f"❌ Get sensors data error: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/mqtt/status', methods=['GET'])
+def mqtt_status():
+    """
+    Lấy trạng thái MQTT connection
+    """
+    if not mqtt_handler:
+        return jsonify({
+            'mqtt_available': False,
+            'is_connected': False
+        }), 200
+    
+    return jsonify({
+        'mqtt_available': True,
+        'is_connected': mqtt_handler.is_connected
+    }), 200
 
 @app.route('/health', methods=['GET'])
 def health():
