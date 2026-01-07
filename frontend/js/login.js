@@ -68,7 +68,7 @@ loginForm.addEventListener('submit', async (e) => {
             showMessage(credentialsMessage, '✅ Đăng nhập thành công!', 'success');
             saveAuthData(data);
             setTimeout(() => {
-                window.location.href = 'chatbot.html';
+                window.location.href = 'dashboard.html';
             }, 1000);
         } else {
             showMessage(credentialsMessage, data.error || 'Đăng nhập thất bại', 'error');
@@ -167,7 +167,7 @@ async function captureFace() {
                 
                 saveAuthData(data);
                 setTimeout(() => {
-                    window.location.href = 'chatbot.html';
+                    window.location.href = 'dashboard.html';
                 }, 1000);
             } else {
                 faceStatus.textContent = '❌ ' + (data.error || 'Nhận diện thất bại');
@@ -199,9 +199,10 @@ function showLoading(show) {
 function saveAuthData(data) {
     localStorage.setItem('authToken', data.token || data.session_id);
     localStorage.setItem('userId', data.user_id);
-    if (data.username) {
-        localStorage.setItem('username', data.username);
-    }
+    localStorage.setItem('user', JSON.stringify({
+        user_id: data.user_id,
+        username: data.username
+    }));
 }
 
 function getAuthToken() {
@@ -222,6 +223,6 @@ document.getElementById('password').addEventListener('focus', () => {
 // Check if already logged in
 window.addEventListener('load', () => {
     if (getAuthToken()) {
-        window.location.href = 'index.html';
+        window.location.href = 'dashboard.html';
     }
 });

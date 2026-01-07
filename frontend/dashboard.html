@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home</title>
+    <link rel="stylesheet" href="css/dashboard-style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1>🏠 Smart Home </h1>
+                <div class="user-info">
+                    <span id="username">User</span>
+                    <button class="btn-logout" onclick="logout()">Đăng xuất</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Devices Grid -->
+            <div class="devices-grid">
+                <!-- Đèn Phòng Khách -->
+                <div class="device-card">
+                    <div class="device-header">
+                        <h3>💡 Đèn Phòng Khách</h3>
+                    </div>
+                    <div class="device-body">
+                        <div class="light-control">
+                            <button class="light-toggle" id="light-living-room" onclick="toggleLight('living_room')">
+                                <span class="light-icon">💡</span>
+                                <span class="light-status">Tắt</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Đèn Phòng Ngủ -->
+                <div class="device-card">
+                    <div class="device-header">
+                        <h3>💡 Đèn Phòng Ngủ</h3>
+                    </div>
+                    <div class="device-body">
+                        <div class="light-control">
+                            <button class="light-toggle" id="light-bedroom" onclick="toggleLight('bedroom')">
+                                <span class="light-icon">💡</span>
+                                <span class="light-status">Tắt</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Đèn Nhà Tắm -->
+                <div class="device-card">
+                    <div class="device-header">
+                        <h3>💡 Đèn Nhà Tắm</h3>
+                    </div>
+                    <div class="device-body">
+                        <div class="light-control">
+                            <button class="light-toggle" id="light-bathroom" onclick="toggleLight('bathroom')">
+                                <span class="light-icon">💡</span>
+                                <span class="light-status">Tắt</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Điều Hòa Phòng Ngủ -->
+                <div class="device-card">
+                    <div class="device-header">
+                        <h3>❄️ Điều Hòa Phòng Ngủ</h3>
+                    </div>
+                    <div class="device-body">
+                        <div class="ac-control">
+                            <button class="ac-toggle" id="ac-bedroom" onclick="toggleAC('bedroom')">
+                                <span class="ac-status">Tắt</span>
+                            </button>
+                            <div class="temperature-control">
+                                <label>Nhiệt độ:</label>
+                                <div class="temp-input-group">
+                                    <button onclick="decreaseTemp('bedroom')">-</button>
+                                    <input type="number" id="temp-bedroom" value="20" readonly>
+                                    <button onclick="increaseTemp('bedroom')">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sensors Section -->
+            <div class="sensors-section">
+                <h2>📊 Cảm Biến</h2>
+                <div class="sensors-grid">
+                    <!-- Temperature Sensor -->
+                    <div class="sensor-card">
+                        <div class="sensor-icon">🌡️</div>
+                        <div class="sensor-info">
+                            <h4>Nhiệt Độ</h4>
+                            <p class="sensor-value" id="temp-value">--°C</p>
+                        </div>
+                    </div>
+
+                    <!-- Humidity Sensor -->
+                    <div class="sensor-card">
+                        <div class="sensor-icon">💧</div>
+                        <div class="sensor-info">
+                            <h4>Độ Ẩm</h4>
+                            <p class="sensor-value" id="humidity-value">--%</p>
+                        </div>
+                    </div>
+
+                    <!-- Light Sensor -->
+                    <div class="sensor-card">
+                        <div class="sensor-icon">☀️</div>
+                        <div class="sensor-info">
+                            <h4>Ánh Sáng</h4>
+                            <p class="sensor-value" id="light-value">-- lux</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <div id="chatbot-widget" class="chatbot-widget">
+        <button class="chatbot-toggle" onclick="toggleChatbot()">
+            <span class="chatbot-icon">💬</span>
+        </button>
+        
+        <div class="chatbot-window" id="chatbot-window" style="display: none;">
+            <div class="chatbot-header">
+                <h3>Chat với AI</h3>
+                <button class="close-btn" onclick="toggleChatbot()">×</button>
+            </div>
+            <div class="chatbot-messages" id="chatbot-messages"></div>
+            <div class="chatbot-input">
+                <form onsubmit="sendChatMessage(event)">
+                    <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." required>
+                    <button type="submit">Gửi</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
