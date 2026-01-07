@@ -1,6 +1,29 @@
 // API endpoints
 const API_BASE_URL = 'http://localhost:5000';
 
+// Check if user is already logged in - redirect to dashboard
+window.addEventListener('load', () => {
+    // Nếu URL có ?logout=true → clear everything
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('logout') === 'true') {
+        localStorage.clear();
+        // Xóa query param
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+    }
+    
+    // Nếu user đã login → redirect dashboard
+    const user = localStorage.getItem('user');
+    if (user) {
+        try {
+            JSON.parse(user); // validate JSON
+            window.location.href = 'dashboard.html';
+        } catch (e) {
+            localStorage.removeItem('user');
+        }
+    }
+});
+
 // DOM elements
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');

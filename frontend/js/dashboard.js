@@ -232,7 +232,15 @@ function displayMessage(text, sender) {
 // Logout
 function logout() {
     if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+        // Xóa toàn bộ localStorage
+        localStorage.clear();
+        // Hoặc xóa từng item cụ thể
         localStorage.removeItem('user');
-        window.location.href = 'login.html';
+        localStorage.removeItem('token');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('username');
+        localStorage.removeItem('session_id');
+        // Redirect và clear cache
+        window.location.href = 'login.html?logout=true';
     }
 }

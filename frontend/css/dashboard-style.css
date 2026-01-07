@@ -139,9 +139,10 @@ body {
 }
 
 .light-toggle.on {
-    background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+    background: linear-gradient(135deg, #ffd89b 0%, #ffb64d 100%);
     border-color: #ffd89b;
-    color: white;
+    color: #333;
+    box-shadow: 0 4px 15px rgba(255, 200, 100, 0.4);
 }
 
 .light-icon {
