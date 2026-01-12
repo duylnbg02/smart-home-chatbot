@@ -4,9 +4,7 @@ import uuid
 from PIL import Image
 import io
 import numpy as np
-from backend.chatbot import Chatbot
 from backend.constants import APP_HOST, APP_PORT, DEBUG, CORS_ORIGINS
-from assistant.pipeline import NLPPipeline
 from backend.mqtt_handler import get_mqtt_handler, init_mqtt
 
 # Initialize Flask app
@@ -15,10 +13,23 @@ app = Flask(__name__)
 # Enable CORS
 CORS(app, resources={r"/.*": {"origins": CORS_ORIGINS}})
 
-# Initialize components
-chatbot = Chatbot()
-nlp_pipeline = NLPPipeline()
+# Initialize MQTT first (before chatbot)
 mqtt_handler = None
+try:
+    mqtt_handler = get_mqtt_handler()
+    if init_mqtt():
+        print("✅ MQTT initialized successfully")
+    else:
+        print("⚠️  MQTT connection failed")
+        mqtt_handler = None
+except Exception as e:
+    print(f"⚠️  MQTT connection warning: {e}")
+    mqtt_handler = None
+
+# Initialize chatbot with MQTT handler
+print("🤖 Initializing Chatbot...")
+from backend.chatbot import get_chatbot
+chatbot = get_chatbot(mqtt_handler)
 
 # Initialize MongoDB connection and services
 chat_service = None
@@ -35,18 +46,6 @@ except Exception as e:
     print(f"⚠️  MongoDB connection warning: {e}")
     print("💡 Chat history will not be saved (make sure MongoDB is running)")
     chat_service = None
-
-# Initialize MQTT connection
-try:
-    mqtt_handler = get_mqtt_handler()
-    if init_mqtt():
-        print("✅ MQTT initialized successfully")
-    else:
-        print("⚠️  MQTT connection failed")
-        mqtt_handler = None
-except Exception as e:
-    print(f"⚠️  MQTT connection warning: {e}")
-    print("💡 Device control will not be available (make sure MQTT broker is running)")
     mqtt_handler = None
 
 @app.route('/login', methods=['POST'])
@@ -249,8 +248,8 @@ def chat():
         if not user_message:
             return jsonify({'error': 'Message cannot be empty'}), 400
         
-        # Process with NLP pipeline
-        nlp_result = nlp_pipeline.process(user_message)
+        # Process with NLP pipeline (from chatbot)
+        nlp_result = chatbot.nlp.process(user_message)
         intent = nlp_result['intent']['type']
         entities = nlp_result['entities']
         
