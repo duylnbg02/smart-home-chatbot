@@ -2,9 +2,9 @@
 NLP Pipeline - Orchestrates all NLP components
 """
 from typing import Dict, List, Any
-from nlp.preprocess import TextPreprocessor
-from nlp.intent import IntentDetector
-from nlp.entities import EntityExtractor
+from assistant.preprocess import TextPreprocessor
+from assistant.intent import IntentDetector
+from assistant.entities import EntityExtractor
 
 class NLPPipeline:
     """

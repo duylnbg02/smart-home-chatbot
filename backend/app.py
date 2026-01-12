@@ -6,7 +6,7 @@ import io
 import numpy as np
 from backend.chatbot import Chatbot
 from backend.constants import APP_HOST, APP_PORT, DEBUG, CORS_ORIGINS
-from nlp.pipeline import NLPPipeline
+from assistant.pipeline import NLPPipeline
 from backend.mqtt_handler import get_mqtt_handler, init_mqtt
 
 # Initialize Flask app
