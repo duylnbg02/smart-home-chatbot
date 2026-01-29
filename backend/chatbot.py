@@ -1,6 +1,3 @@
-"""
-Smart Home Chatbot với NLP và Context Memory
-"""
 import random
 from assistant.pipeline import NLPPipeline
 from backend.mqtt_handler import get_mqtt_handler
@@ -38,27 +35,23 @@ class ConversationContext:
 
 class Chatbot:
     def __init__(self, mqtt_handler=None):
-        """
-        Khởi tạo chatbot với NLP Pipeline và MQTT
-        """
         print("🤖 Đang khởi tạo Chatbot...")
         self.nlp = NLPPipeline()
         self.mqtt = mqtt_handler or get_mqtt_handler()
-        self.context = ConversationContext()  # Context Memory
+        self.context = ConversationContext()  
         print("✅ Chatbot đã sẵn sàng!")
         
         # Knowledge base cho các câu hỏi thông thường
         self.knowledge_base = {
             'xin chào': 'Xin chào! 👋 Tôi có thể giúp bạn điều khiển nhà thông minh!',
             'hello': 'Hello! 👋 How can I help you?',
-            'ai là cái tên của bạn': 'Tôi là AI Smart Home Assistant!',
+            'tên của bạn': 'Tôi là AI Smart Home Assistant!',
             'bạn là ai': 'Tôi là AI Smart Home Assistant, giúp bạn điều khiển nhà thông minh!',
             'cảm ơn': 'Không có gì! 😊 Nếu cần giúp đỡ gì khác thì cứ hỏi tôi!',
             'tạm biệt': 'Tạm biệt! 👋 Rất vui được gặp bạn!',
             'bye': 'Goodbye! 👋',
         }
-        
-        # Device name mapping
+
         self.device_names = {
             'đèn': 'light',
             'den': 'light',
@@ -87,25 +80,17 @@ class Chatbot:
         
         # Confirmation words
         self.confirm_yes = ['có', 'co', 'yes', 'ok', 'được', 'duoc', 'ừ', 'u', 'đúng', 'dung', 'bật', 'bat', 'mở', 'mo']
-        self.confirm_no = ['không', 'khong', 'no', 'thôi', 'thoi', 'hủy', 'huy', 'cancel']
+        self.confirm_no = ['không', 'khong', 'no', 'thôi', 'thoi', 'hủy', 'huy', 'cancel','bỏ']
 
     def get_response(self, user_message: str) -> str:
-        """
-        Xử lý tin nhắn và trả về phản hồi
-        """
         message_lower = user_message.lower().strip()
-        
-        # Kiểm tra xem có đang chờ xác nhận không
         if self.context.awaiting_confirmation:
             return self._handle_confirmation(message_lower)
-        
-        # Kiểm tra context - user đang trả lời câu hỏi trước đó
         if self.context.has_pending():
             context_response = self._handle_context_response(message_lower)
             if context_response:
                 return context_response
-        
-        # Phân tích bằng NLP Pipeline
+
         result = self.nlp.process(user_message)
         intent = result['intent']['type']
         confidence = result['intent']['confidence']
@@ -113,8 +98,7 @@ class Chatbot:
         
         print(f"🧠 Intent: {intent} ({confidence})")
         print(f"📦 Entities: {entities}")
-        
-        # Xử lý theo intent
+
         if intent == 'control_device':
             return self._handle_device_control(user_message, entities)
         
@@ -140,7 +124,6 @@ class Chatbot:
             return self._get_help_message()
         
         else:
-            # Kiểm tra knowledge base
             message_lower = user_message.lower()
             for key, response in self.knowledge_base.items():
                 if key in message_lower:
@@ -149,7 +132,6 @@ class Chatbot:
             return self._generate_default_response(user_message)
 
     def _handle_greeting(self) -> str:
-        """Xử lý lời chào"""
         greetings = [
             "Xin chào! 👋 Tôi có thể giúp bạn điều khiển nhà thông minh!",
             "Chào bạn! 😊 Bạn muốn tôi giúp gì nào?",
@@ -158,7 +140,6 @@ class Chatbot:
         return random.choice(greetings)
 
     def _handle_device_control(self, message: str, entities: list) -> str:
-        """Xử lý điều khiển thiết bị"""
         message_lower = message.lower()
         
         # Tìm device và location từ message
@@ -483,8 +464,8 @@ class Chatbot:
         """Tạo câu trả lời mặc định"""
         responses = [
             "🤔 Tôi chưa hiểu ý bạn. Bạn có thể nói rõ hơn không?",
-            "💡 Gợi ý: Hãy thử nói 'Bật đèn phòng khách' hoặc 'Nhiệt độ bao nhiêu?'",
-            "🏠 Tôi có thể giúp bạn điều khiển đèn, điều hòa, và xem cảm biến. Hãy thử nhé!",
+            "Bạn có muốn xem tin tức ngày hôm nay không? 📰",
+            "Bạn có cần tôi giúp gì không? 😊",
         ]
         return random.choice(responses)
 
