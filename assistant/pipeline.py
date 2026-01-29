@@ -5,28 +5,19 @@ from typing import Dict, List, Any
 from assistant.preprocess import TextPreprocessor
 from assistant.intent import IntentDetector
 from assistant.entities import EntityExtractor
-from assistant.phobert_intent import PhoBERTIntentDetector
 
 class NLPPipeline:
     """
     Complete NLP pipeline orchestrator
     """
     
-    def __init__(self, use_phobert: bool = True):
+    def __init__(self):
         """
-        Initialize all NLP components
-        
-        Args:
-            use_phobert: Use PhoBERT for intent detection (default: True)
+        Initialize all NLP components (rule-based intent detector by default)
         """
         self.preprocessor = TextPreprocessor()
-        self.use_phobert = use_phobert
-        
-        if use_phobert:
-            self.intent_detector = PhoBERTIntentDetector()
-        else:
-            self.intent_detector = IntentDetector()
-            
+        # Use lightweight rule-based intent detector for lower resource usage
+        self.intent_detector = IntentDetector()
         self.entity_extractor = EntityExtractor()
     
     def process(self, text: str) -> Dict[str, Any]:

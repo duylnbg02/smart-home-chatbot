@@ -1,5 +1,5 @@
 """
-Smart Home Chatbot với PhoBERT NLP và Context Memory
+Smart Home Chatbot với NLP và Context Memory
 """
 import random
 from assistant.pipeline import NLPPipeline
@@ -41,8 +41,8 @@ class Chatbot:
         """
         Khởi tạo chatbot với NLP Pipeline và MQTT
         """
-        print("🤖 Đang khởi tạo Chatbot với PhoBERT...")
-        self.nlp = NLPPipeline(use_phobert=True)
+        print("🤖 Đang khởi tạo Chatbot...")
+        self.nlp = NLPPipeline()
         self.mqtt = mqtt_handler or get_mqtt_handler()
         self.context = ConversationContext()  # Context Memory
         print("✅ Chatbot đã sẵn sàng!")

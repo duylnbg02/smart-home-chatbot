@@ -17,6 +17,22 @@ class IntentDetector:
                 'keywords': ['xin chào', 'hello', 'hi', 'chào', 'hey', 'halo'],
                 'confidence_threshold': 0.7
             },
+            'control_device': {
+                'keywords': ['bật', 'tắt', 'bat', 'tat', 'mở', 'mo', 'turn on', 'turn off'],
+                'confidence_threshold': 0.6
+            },
+            'check_status': {
+                'keywords': ['trạng thái', 'trang thai', 'kiểm tra', 'kiem tra', 'status', 'đang bật', 'dang bat'],
+                'confidence_threshold': 0.6
+            },
+            'query_sensor': {
+                'keywords': ['nhiệt độ', 'nhiet do', 'độ ẩm', 'do am', 'ánh sáng', 'anh sang', 'độ', 'temperature', 'humidity', 'light'],
+                'confidence_threshold': 0.6
+            },
+            'set_value': {
+                'keywords': ['đặt', 'dat', 'cài đặt', 'cai dat', 'độ', 'độC', 'độ c', 'độ C'],
+                'confidence_threshold': 0.6
+            },
             'farewell': {
                 'keywords': ['tạm biệt', 'bye', 'goodbye', 'see you', 'bye bye'],
                 'confidence_threshold': 0.7

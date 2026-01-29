@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+.venv/
+venv/
+.env
+.env.*
+
+# IDEs
+.vscode/
+.idea/
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Virtual envs and build
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
+# VSCode Python extension cache
+**/*.cpython-*.pyc
