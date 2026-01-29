@@ -1,7 +1,3 @@
-"""
-Database initialization script
-Tạo collections, indexes, và sample data cho MongoDB
-"""
 import sys
 from pymongo import MongoClient, ASCENDING
 from datetime import datetime
@@ -20,9 +16,6 @@ def hash_password(password):
     return f"{salt}${pwd_hash.hex()}"
 
 def init_database():
-    """Initialize database"""
-    
-    # Connect to MongoDB
     try:
         client = MongoClient('mongodb://localhost:27017', serverSelectionTimeoutMS=5000)
         client.admin.command('ping')

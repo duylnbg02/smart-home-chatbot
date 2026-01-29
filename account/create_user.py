@@ -1,6 +1,3 @@
-"""
-Script tạo tài khoản mới
-"""
 import hashlib
 import secrets
 import uuid
@@ -8,7 +5,6 @@ from datetime import datetime
 from pymongo import MongoClient
 
 def generate_password_hash(password):
-    """Tạo hash từ password"""
     salt = secrets.token_hex(16)
     pwd_hash = hashlib.pbkdf2_hmac(
         'sha256',
@@ -29,8 +25,7 @@ if __name__ == '__main__':
     if not username or not password:
         print("❌ Username/Password không được để trống!")
         exit()
-    
-    # Connect to MongoDB
+
     try:
         client = MongoClient('mongodb://localhost:27017')
         db = client['chatbot']

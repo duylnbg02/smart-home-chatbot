@@ -1,6 +1,3 @@
-"""
-Script tạo tài khoản admin mặc định
-"""
 from pymongo import MongoClient
 import hashlib
 import secrets
