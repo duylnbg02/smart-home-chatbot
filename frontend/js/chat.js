@@ -100,9 +100,7 @@ async function sendMessage() {
 function displayMessage(text, sender) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}-message`;
-
     const p = document.createElement('p');
-    // Use textContent to avoid HTML injection and preserve newlines via CSS
     p.textContent = text;
     p.style.whiteSpace = 'pre-wrap';
     messageDiv.appendChild(p);
