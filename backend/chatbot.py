@@ -244,22 +244,22 @@ class Chatbot:
         states = self.mqtt.get_device_states()
         sensors = self.mqtt.get_sensor_data()
         
-        status_lines = ["📊 **Trạng thái nhà thông minh:**\n"]
+        status_lines = ["📊 Trạng thái nhà thông minh:"]
         
         # Lights
-        status_lines.append("💡 **Đèn:**")
+        status_lines.append("💡Đèn:")
         for loc, state in states['lights'].items():
             loc_vn = self._get_location_vietnamese(loc)
-            status = "Bật ✓" if state else "Tắt"
+            status = "Bật" if state else "Tắt"
             status_lines.append(f"  • {loc_vn}: {status}")
         
         # AC
-        status_lines.append("\n❄️ **Điều hòa:**")
-        ac_status = "Bật ✓" if states['ac']['bedroom'] else "Tắt"
+        status_lines.append("❄️ Điều hòa:")
+        ac_status = "Bật" if states['ac']['bedroom'] else "Tắt"
         status_lines.append(f"  • Phòng ngủ: {ac_status} ({states['ac']['temperature']}°C)")
         
         # Sensors
-        status_lines.append("\n🌡️ **Cảm biến:**")
+        status_lines.append("🌡️ Cảm biến:")
         status_lines.append(f"  • Nhiệt độ: {sensors['temperature']}°C")
         status_lines.append(f"  • Độ ẩm: {sensors['humidity']}%")
         status_lines.append(f"  • Ánh sáng: {sensors['light']} lux")
@@ -352,21 +352,21 @@ class Chatbot:
 
     def _get_help_message(self) -> str:
         """Trả về hướng dẫn sử dụng"""
-        return """🏠 **Hướng dẫn sử dụng Smart Home:**
+        return """🏠 Hướng dẫn sử dụng Smart Home:
 
-**💡 Điều khiển đèn:**
+💡 Điều khiển đèn:
 • "Bật đèn phòng khách"
 • "Tắt đèn phòng ngủ"
 
-**❄️ Điều khiển điều hòa:**
+❄️ Điều khiển điều hòa:
 • "Bật điều hòa phòng ngủ"
 • "Đặt điều hòa 25 độ"
 
-**📊 Kiểm tra trạng thái:**
+📊 Kiểm tra trạng thái:
 • "Trạng thái nhà"
 • "Đèn phòng khách đang bật hay tắt?"
 
-**🌡️ Xem cảm biến:**
+🌡️ Xem cảm biến:
 • "Nhiệt độ bao nhiêu?"
 • "Độ ẩm hiện tại"
 • "Ánh sáng trong nhà"

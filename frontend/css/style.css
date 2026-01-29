@@ -166,7 +166,6 @@ body {
     transform: scale(0.98);
 }
 
-/* Scrollbar styling */
 .chat-messages::-webkit-scrollbar {
     width: 8px;
 }
@@ -184,7 +183,6 @@ body {
     background: #764ba2;
 }
 
-/* Responsive design */
 @media (max-width: 600px) {
     .chat-container {
         height: 100vh;
