@@ -1,6 +1,3 @@
-"""
-Script hiển thị tất cả tài khoản trong database
-"""
 from pymongo import MongoClient
 from datetime import datetime
 

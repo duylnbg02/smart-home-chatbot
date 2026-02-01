@@ -1,20 +1,10 @@
-"""
-Text preprocessing module for NLP pipeline
-"""
 import re
 import string
 from typing import List
 
 class TextPreprocessor:
-    """
-    Text preprocessing class
-    """
-    
     @staticmethod
     def clean_text(text: str) -> str:
-        """
-        Clean text by removing special characters and extra spaces
-        """
         # Convert to lowercase
         text = text.lower()
         
@@ -34,17 +24,10 @@ class TextPreprocessor:
     
     @staticmethod
     def tokenize(text: str) -> List[str]:
-        """
-        Split text into tokens (words)
-        """
-        # Simple tokenization by space
         return text.split()
     
     @staticmethod
     def remove_stopwords(tokens: List[str], stopwords: List[str] = None) -> List[str]:
-        """
-        Remove common stopwords
-        """
         if stopwords is None:
             stopwords = [
                 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
@@ -58,9 +41,6 @@ class TextPreprocessor:
     
     @staticmethod
     def preprocess(text: str) -> List[str]:
-        """
-        Complete preprocessing pipeline
-        """
         cleaned = TextPreprocessor.clean_text(text)
         tokens = TextPreprocessor.tokenize(cleaned)
         tokens = TextPreprocessor.remove_stopwords(tokens)

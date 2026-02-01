@@ -100,7 +100,10 @@ async function sendMessage() {
 function displayMessage(text, sender) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}-message`;
-    messageDiv.innerHTML = `<p>${text}</p>`;
+    const p = document.createElement('p');
+    p.textContent = text;
+    p.style.whiteSpace = 'pre-wrap';
+    messageDiv.appendChild(p);
     chatMessages.appendChild(messageDiv);
     
     // Cuộn xuống cuối cùng

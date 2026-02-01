@@ -1,12 +1,8 @@
-"""
-Script cập nhật password cho tài khoản
-"""
 import hashlib
 import secrets
 from pymongo import MongoClient
 
 def generate_password_hash(password):
-    """Tạo hash từ password"""
     salt = secrets.token_hex(16)
     pwd_hash = hashlib.pbkdf2_hmac(
         'sha256',
@@ -32,14 +28,12 @@ if __name__ == '__main__':
         client = MongoClient('mongodb://localhost:27017')
         db = client['chatbot']
         users_col = db['users']
-        
-        # Find user
+
         user = users_col.find_one({'username': username})
         if not user:
             print(f"❌ Tài khoản '{username}' không tồn tại!")
             exit()
-        
-        # Update password
+
         hash_value = generate_password_hash(new_password)
         result = users_col.update_one(
             {'username': username},

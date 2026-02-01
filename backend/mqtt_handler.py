@@ -12,20 +12,13 @@ class MQTTHandler:
         self.broker_address = broker_address
         self.port = port
         self.client = mqtt.Client(client_id='chatbot-server')
-        
-        # Thiết lập TLS cho HiveMQ Cloud
         self.client.tls_set(ca_certs=None, certfile=None, keyfile=None, cert_reqs=mqtt.ssl.CERT_REQUIRED, tls_version=mqtt.ssl.PROTOCOL_TLSv1_2, ciphers=None)
         self.client.tls_insecure_set(False)
-        
-        # Thiết lập username/password
         self.client.username_pw_set('mqtt-backend', 'Test1234')
-        
-        # Thiết lập callbacks
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
         
-        # Lưu trữ dữ liệu thiết bị và cảm biến
         self.device_states = {
             'lights': {
                 'living_room': False,
@@ -48,7 +41,6 @@ class MQTTHandler:
         self.is_connected = False
         
     def connect(self):
-        """Kết nối đến MQTT broker"""
         try:
             self.client.connect(self.broker_address, self.port, keepalive=60)
             self.client.loop_start()
@@ -59,17 +51,13 @@ class MQTTHandler:
         return True
     
     def disconnect(self):
-        """Ngắt kết nối MQTT"""
         self.client.loop_stop()
         self.client.disconnect()
     
     def on_connect(self, client, userdata, flags, rc):
-        """Callback khi kết nối thành công"""
         if rc == 0:
             self.is_connected = True
             print("✅ MQTT broker kết nối thành công")
-            
-            # Subscribe đến các topics
             self.client.subscribe([
                 ('esp32/lights/living_room/status', 1),
                 ('esp32/lights/bedroom/status', 1),
@@ -85,14 +73,12 @@ class MQTTHandler:
             print(f"❌ Lỗi kết nối MQTT: {rc}")
     
     def on_message(self, client, userdata, msg):
-        """Callback khi nhận được message từ MQTT"""
         try:
             topic = msg.topic
             payload = msg.payload.decode('utf-8')
             
             print(f"📨 MQTT Message: {topic} = {payload}")
-            
-            # Xử lý light status
+
             if 'lights' in topic and 'status' in topic:
                 if 'living_room' in topic:
                     self.device_states['lights']['living_room'] = payload == 'on'
@@ -101,11 +87,9 @@ class MQTTHandler:
                 elif 'bathroom' in topic:
                     self.device_states['lights']['bathroom'] = payload == 'on'
             
-            # Xử lý AC status
             elif 'ac' in topic and 'status' in topic:
                 self.device_states['ac']['bedroom'] = payload == 'on'
-            
-            # Xử lý sensor data
+
             elif 'temperature' in topic:
                 self.sensor_data['temperature'] = float(payload)
             elif 'humidity' in topic:
@@ -127,14 +111,6 @@ class MQTTHandler:
             print(f"❌ Mất kết nối MQTT: {rc}")
     
     def send_command(self, device_type, location, value):
-        """
-        Gửi lệnh điều khiển thiết bị đến ESP32
-        
-        Args:
-            device_type: 'light', 'ac', 'ac_temp'
-            location: 'living_room', 'bedroom', 'bathroom'
-            value: True/False hoặc nhiệt độ
-        """
         if not self.is_connected:
             print("⚠️  MQTT chưa kết nối, không thể gửi lệnh")
             return False
@@ -175,29 +151,23 @@ class MQTTHandler:
             return False
     
     def get_device_states(self):
-        """Lấy trạng thái tất cả các thiết bị"""
         return self.device_states
     
     def get_sensor_data(self):
-        """Lấy dữ liệu từ tất cả các cảm biến"""
         return self.sensor_data
     
     def register_callback(self, callback):
-        """Đăng ký callback để nhận thông báo"""
         self.callbacks.append(callback)
 
-# Global instance
 mqtt_handler = None
 
 def get_mqtt_handler():
-    """Lấy global MQTT handler instance"""
     global mqtt_handler
     if mqtt_handler is None:
         mqtt_handler = MQTTHandler()
     return mqtt_handler
 
 def init_mqtt():
-    """Khởi tạo MQTT handler"""
     global mqtt_handler
     mqtt_handler = get_mqtt_handler()
     return mqtt_handler.connect()
