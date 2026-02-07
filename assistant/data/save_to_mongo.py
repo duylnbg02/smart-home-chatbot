@@ -26,8 +26,7 @@ def ensure_indexes(coll):
     # unique on hash to prevent duplicates
     coll.create_index('hash', unique=True)
     coll.create_index('url')
-    coll.create_index('crawled_at')
-    coll.create_index('published_at')
+    coll.create_index('date')  # Index cho query theo ngày bài báo
 
 
 def ingest_file_to_mongo(input_file: str, mongo_uri: str, db_name: str = 'data', collection_name: str = 'articles', upsert: bool = False):
@@ -68,35 +67,33 @@ def ingest_file_to_mongo(input_file: str, mongo_uri: str, db_name: str = 'data',
         url = item.get('url')
         title = item.get('title', '')
         chunks = item.get('chunks', [])
-        # try to get published date from item (e.g., 'date' or 'published_at')
-        published_str = item.get('date') or item.get('published_at') or item.get('pub_date')
+        
+        # Lấy date từ JSON và parse thành datetime
+        date_str = item.get('date', '')
         def parse_date(s):
             if not s:
                 return None
             try:
-                # ISO formats
-                dt = datetime.fromisoformat(s)
-                if dt.tzinfo is None:
-                    return dt.replace(tzinfo=timezone.utc)
-                return dt
+                # Format: "2026-02-07 09:07"
+                dt = datetime.strptime(s, '%Y-%m-%d %H:%M')
+                return dt.replace(tzinfo=timezone.utc)
             except Exception:
                 try:
-                    # common date only format YYYY-MM-DD
+                    # Format: "2026-02-07"
                     dt = datetime.strptime(s, '%Y-%m-%d')
                     return dt.replace(tzinfo=timezone.utc)
                 except Exception:
                     return None
 
-        published_at = parse_date(published_str)
+        date = parse_date(date_str)
 
         for i, chunk in enumerate(chunks):
             payload = {
                 'url': url,
                 'title': title,
+                'date': date,  # Ngày bài báo được viết
                 'chunk_index': i,
-                'chunk': chunk,
-                'crawled_at': datetime.now(timezone.utc),
-                'published_at': published_at,
+                'chunk': chunk
             }
             payload['hash'] = sha256((url or '') + title + chunk)
 
