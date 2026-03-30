@@ -14,36 +14,12 @@ class EntityExtractor:
             'temperature': r'\b\d{1,2}\s*(?:độ|do|°C|°|degree)',
         }
         
-        # Smart Home entity dictionaries
-        self.smart_home_entities = {
-            'device': {
-                'đèn': 'light', 'den': 'light', 'light': 'light', 'bóng đèn': 'light',
-                'điều hòa': 'ac', 'dieu hoa': 'ac', 'máy lạnh': 'ac', 'may lanh': 'ac', 'ac': 'ac',
-                'quạt': 'fan', 'quat': 'fan', 'fan': 'fan',
-            },
-            'room': {
-                'phòng khách': 'living_room', 'phong khach': 'living_room', 'living room': 'living_room',
-                'phòng ngủ': 'bedroom', 'phong ngu': 'bedroom', 'bedroom': 'bedroom',
-                'phòng tắm': 'bathroom', 'phong tam': 'bathroom', 'bathroom': 'bathroom',
-            },
-            'action': {
-                'bật': 'on', 'bat': 'on', 'mở': 'on', 'mo': 'on', 'turn on': 'on', 'on': 'on',
-                'tắt': 'off', 'tat': 'off', 'đóng': 'off', 'dong': 'off', 'turn off': 'off', 'off': 'off',
-                'tăng': 'increase', 'tang': 'increase', 'increase': 'increase',
-                'giảm': 'decrease', 'giam': 'decrease', 'decrease': 'decrease',
-            },
-            'sensor': {
-                'nhiệt độ': 'temperature', 'nhiet do': 'temperature', 'temperature': 'temperature',
-                'độ ẩm': 'humidity', 'do am': 'humidity', 'humidity': 'humidity', 'ẩm': 'humidity',
-                'ánh sáng': 'light_level', 'anh sang': 'light_level', 'sáng': 'light_level',
-            }
-        }
+        # Note: Smart home entity extraction removed - now using fixed_commands pattern in chatbot.py
         
-        self.entity_types = list(self.patterns.keys()) + list(self.smart_home_entities.keys())
+        self.entity_types = list(self.patterns.keys())
     
     def extract(self, text: str) -> List[Dict[str, any]]:
         entities = []
-        text_lower = text.lower()
 
         for entity_type, pattern in self.patterns.items():
             matches = re.finditer(pattern, text, re.IGNORECASE)
@@ -56,18 +32,6 @@ class EntityExtractor:
                     'end': match.end()
                 })
 
-        for entity_type, entity_dict in self.smart_home_entities.items():
-            for keyword, normalized in entity_dict.items():
-                # Tìm vị trí của keyword trong text
-                start = text_lower.find(keyword)
-                if start != -1:
-                    entities.append({
-                        'type': entity_type,
-                        'value': keyword,
-                        'normalized': normalized,
-                        'start': start,
-                        'end': start + len(keyword)
-                    })
         seen = set()
         unique_entities = []
         for e in entities:
@@ -79,19 +43,8 @@ class EntityExtractor:
         unique_entities.sort(key=lambda x: x['start'])
         return unique_entities
     
-    def extract_smart_home(self, text: str) -> Dict[str, str]:
-        text_lower = text.lower()
-        result = {}
-        
-        for entity_type, entity_dict in self.smart_home_entities.items():
-            for keyword, normalized in entity_dict.items():
-                if keyword in text_lower:
-                    result[entity_type] = normalized
-                    break  
-        
-        return result
-    
     def extract_by_type(self, text: str, entity_type: str) -> List[Dict[str, any]]:
+        """Extract entities of a specific type (patterns only)"""
         if entity_type in self.patterns:
             pattern = self.patterns[entity_type]
             entities = []
@@ -103,21 +56,6 @@ class EntityExtractor:
                     'start': match.start(),
                     'end': match.end()
                 })
-            return entities
-        
-        elif entity_type in self.smart_home_entities:
-            text_lower = text.lower()
-            entities = []
-            for keyword, normalized in self.smart_home_entities[entity_type].items():
-                start = text_lower.find(keyword)
-                if start != -1:
-                    entities.append({
-                        'type': entity_type,
-                        'value': keyword,
-                        'normalized': normalized,
-                        'start': start,
-                        'end': start + len(keyword)
-                    })
             return entities
         
         return []

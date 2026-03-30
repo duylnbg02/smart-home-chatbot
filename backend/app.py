@@ -236,6 +236,7 @@ def chat():
     Response: {"reply": "bot reply", "intent": "intent", "entities": [...]}
     """
     try:
+        print(f"📨 Received chat request")
         data = request.get_json()
         
         if not data or 'message' not in data:
@@ -245,16 +246,21 @@ def chat():
         user_id = data.get('user_id', 'anonymous')
         session_id = data.get('session_id', str(uuid.uuid4()))
         
+        print(f"💬 User: {user_message}")
+        
         if not user_message:
             return jsonify({'error': 'Message cannot be empty'}), 400
         
         # Process with NLP pipeline (from chatbot)
+        print(f"🧠 Processing NLP...")
         nlp_result = chatbot.nlp.process(user_message)
         intent = nlp_result['intent']['type']
         entities = nlp_result['entities']
         
         # Get bot reply
+        print(f"🤖 Getting chatbot response...")
         bot_reply = chatbot.get_response(user_message)
+        print(f"✅ Bot reply: {bot_reply[:100]}...")
         
         # Save to database if available
         if chat_service:
@@ -280,6 +286,9 @@ def chat():
         }), 200
     
     except Exception as e:
+        print(f"❌ Chat error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/history/<user_id>/<session_id>', methods=['GET'])

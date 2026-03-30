@@ -81,7 +81,7 @@ class FaceRecognitionHandler:
             # Detect face locations
             face_locations = face_recognition.face_locations(
                 image_array,
-                model='hog'  # Dùng 'cnn' nếu có GPU
+                model='cnn'  # Dùng 'cnn' nếu có GPU
             )
             
             if not face_locations:

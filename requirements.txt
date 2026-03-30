@@ -1,84 +1,102 @@
-# Core runtime dependencies required by the backend webapp
+# =====================================================
+# Core Web Framework
+# =====================================================
 Flask==3.0.0
 Flask-Cors==4.0.0
-python-dotenv==1.0.0
-pymongo==4.6.0
-pydantic==2.12.5
-Pillow==10.4.0
-beautifulsoup4==4.12.2
+Werkzeug==3.0.0
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+itsdangerous==2.2.0
+blinker==1.9.0
+click==8.3.1
 
+# =====================================================
+# Database
+# =====================================================
+pymongo==4.6.0
+dnspython==2.8.0
+
+# =====================================================
+# Config / Utilities
+# =====================================================
+python-dotenv==1.0.0
+pydantic==2.12.5
+certifi==2026.1.4
+charset-normalizer==3.4.4
+idna==3.11
+urllib3==2.6.3
+requests==2.32.5
+colorama==0.4.6
+tqdm==4.67.1
+regex==2026.1.15
+packaging==25.0
+typing_extensions==4.15.0
+filelock==3.20.3
+PyYAML==6.0.3
+fsspec==2026.1.0
+pandas==2.1.4
+numpy==1.26.4
+
+# =====================================================
+# Image Processing
+# =====================================================
+Pillow==10.4.0
+
+# =====================================================
+# Face Recognition
+# =====================================================
 face-recognition==1.3.0
 face_recognition_models==0.3.0
 dlib==20.0.0
 
-
-blinker==1.9.0
-click==8.3.1
-colorama==0.4.6
-dnspython==2.8.0
-face-recognition==1.3.0
-face_recognition_models==0.3.0
-Flask==3.0.0
-Flask-Cors==4.0.0
-fsspec==2026.1.0
-pandas==2.1.4
+# =====================================================
+# IoT / MQTT
+# =====================================================
 paho-mqtt==1.6.1
-pymongo==4.6.0
-python-dotenv==1.0.0
-regex==2026.1.15
-tqdm==4.67.1
-Werkzeug==3.0.0
-backports.zstd==1.3.0
-blinker==1.9.0
-Brotli==1.2.0
-certifi==2026.1.4
-charset-normalizer==3.4.4
-click==8.3.1
-colorama==0.4.6
-dnspython==2.8.0
-face-recognition==1.3.0
-face_recognition_models==0.3.0
-filelock==3.20.3
-Flask==3.0.0
-Flask-Cors==4.0.0
-fsspec==2026.1.0
-h2==4.3.0
-hpack==4.1.0
-hyperframe==6.1.0
-idna==3.11
-itsdangerous==2.2.0
-Jinja2==3.1.6
-MarkupSafe==3.0.3
-mpmath==1.3.0
-networkx==3.4.2
-packaging==25.0
-numpy==1.26.4
-pip==26.0
-pymongo==4.6.0
-PySocks==1.7.1
-python-dotenv==1.0.0
-PyYAML==6.0.3
-regex==2026.1.15
-requests==2.32.5
-safetensors==0.7.0
-setuptools==80.10.1
-sympy==1.13.1
-tokenizers==0.13.3
+
+# =====================================================
+# Deep Learning (PyTorch + Transformers)
+# =====================================================
 torch==2.5.1
 torchaudio==2.5.1
 torchvision==0.20.1
-tqdm==4.67.1
-transformers==4.36.2
-typing_extensions==4.15.0
-urllib3==2.6.3
-Werkzeug==3.0.0
-wheel==0.46.3
+transformers==5.4.0
+tokenizers==0.22.2
+safetensors==0.7.0
+sympy==1.13.1
+mpmath==1.3.0
+networkx==3.4.2
+
+# =====================================================
+# LangChain + RAG
+# =====================================================
+langchain-community==0.4.1
+langchain-core==1.2.23
+langchain-classic==1.0.3
+langchain-text-splitters==1.1.1
+langchain-google-genai==4.2.1
+langsmith==0.7.22
+sentence-transformers==5.3.0
+huggingface-hub==1.8.0
+faiss-cpu==1.13.2
+google-genai==1.69.0
+google-auth==2.49.1
+scikit-learn==1.7.2
+scipy==1.15.3
+SQLAlchemy==2.0.48
+
+# =====================================================
+# Web Scraping
+# =====================================================
+beautifulsoup4==4.12.2
+
+# =====================================================
+# HTTP/2 support (optional)
+# =====================================================
+h2==4.3.0
+hpack==4.1.0
+hyperframe==6.1.0
+Brotli==1.2.0
+PySocks==1.7.1
 win_inet_pton==1.1.0
-
-langchain
-langchain-core
-langchain-community
-langchain_google_genai
-sentence-transformers
-huggingface-hub==0.19.4
-
+backports.zstd==1.3.0
