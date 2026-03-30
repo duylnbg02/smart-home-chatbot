@@ -8,6 +8,7 @@ from backend.chatbot import get_chatbot
 from database.mongodb import get_db
 from backend.services import ChatHistoryService
 from backend.auth import AuthHandler
+from backend.weather_service import get_weather_service
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": CORS_ORIGINS}})
@@ -18,6 +19,7 @@ mqtt_handler = get_mqtt_handler()
 init_mqtt()
 chatbot = get_chatbot(mqtt_handler)
 auth = AuthHandler(db)
+weather_service = get_weather_service()
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -94,6 +96,13 @@ def get_history(user_id, session_id):
     except Exception as e:
         return jsonify({'messages': [], 'error': str(e)}), 500
 
+@app.route('/devices/status', methods=['GET'])
+def get_devices_status():
+    try:
+        return jsonify({'success': True, 'devices': mqtt_handler.get_device_states()}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/device/command', methods=['POST'])
 def send_command():
     try:
@@ -106,9 +115,33 @@ def send_command():
 @app.route('/sensors/data', methods=['GET'])
 def get_sensors():
     try:
-        return jsonify({'sensors': mqtt_handler.get_sensor_data(), 'connected': mqtt_handler.is_connected}), 200
+        sensor_data = mqtt_handler.get_sensor_data()
+        connected = mqtt_handler.is_connected
+        source = 'mqtt'
+        # Fall back to WeatherAPI when MQTT not connected or no data
+        if not connected or (sensor_data['temperature'] == 0 and sensor_data['humidity'] == 0):
+            weather = weather_service.get_current()
+            if weather:
+                sensor_data = {
+                    'temperature': weather['temperature'],
+                    'humidity':    weather['humidity'],
+                    'light':       weather['light'],
+                }
+                source = 'weather'
+        return jsonify({'sensors': sensor_data, 'connected': connected, 'source': source}), 200
     except Exception as e:
-        return jsonify({'sensors': {}, 'connected': False}), 200
+        return jsonify({'sensors': {}, 'connected': False, 'source': 'error'}), 200
+
+@app.route('/weather', methods=['GET'])
+def get_weather():
+    try:
+        data = weather_service.get_current()
+        if data:
+            return jsonify({'success': True, 'weather': data}), 200
+        return jsonify({'success': False, 'message': 'Không lấy được dữ liệu thời tiết'}), 503
+    except Exception as e:
+        print(f'❌ /weather error: {e}')
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/health')
 def health():

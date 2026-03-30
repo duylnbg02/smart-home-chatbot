@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadUserInfo();
     initDeviceStates();
     startSensorUpdates();
+    startDeviceUpdates();
 });
 
 function loadUserInfo() {
@@ -27,19 +28,25 @@ function loadUserInfo() {
     }
 }
 
-function initDeviceStates() {
-    fetch(`${API_BASE}/devices/status`)
+function fetchDeviceStates() {
+    return fetch(`${API_BASE}/devices/status`)
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                if (data.devices) {
-                    deviceStates.lights = { ...deviceStates.lights, ...data.devices.lights };
-                    deviceStates.ac = { ...deviceStates.ac, ...data.devices.ac };
-                }
+            if (data.success && data.devices) {
+                deviceStates.lights = { ...deviceStates.lights, ...data.devices.lights };
+                deviceStates.ac    = { ...deviceStates.ac,    ...data.devices.ac };
                 updateDeviceUI();
             }
         })
-        .catch(error => console.log('Device status not yet available:', error));
+        .catch(error => console.log('Device status not available:', error));
+}
+
+function initDeviceStates() {
+    fetchDeviceStates();
+}
+
+function startDeviceUpdates() {
+    setInterval(fetchDeviceStates, 3000);
 }
 
 function updateDeviceUI() {
@@ -60,10 +67,10 @@ function updateDeviceUI() {
     if (acBtn) {
         if (deviceStates.ac.bedroom) {
             acBtn.classList.add('on');
-            acBtn.textContent = 'Bật';
+            acBtn.querySelector('.ac-status').textContent = 'Bật';
         } else {
             acBtn.classList.remove('on');
-            acBtn.textContent = 'Tắt';
+            acBtn.querySelector('.ac-status').textContent = 'Tắt';
         }
     }
     document.getElementById('temp-bedroom').value = deviceStates.ac.temperature;
@@ -133,12 +140,28 @@ function updateSensors() {
         .then(response => response.json())
         .then(data => {
             if (data.sensors) {
-                document.getElementById('temp-value').textContent = 
-                    data.sensors.temperature.toFixed(1) + '°C';
-                document.getElementById('humidity-value').textContent = 
-                    data.sensors.humidity.toFixed(1) + '%';
-                document.getElementById('light-value').textContent = 
-                    data.sensors.light + ' lux';
+                const s = data.sensors;
+                const temp = (typeof s.temperature === 'number') ? s.temperature : 0;
+                const humi = (typeof s.humidity === 'number') ? s.humidity : 0;
+                const light = (typeof s.light === 'number') ? s.light : 0;
+
+                document.getElementById('temp-value').textContent = temp.toFixed(1) + '°C';
+                document.getElementById('humidity-value').textContent = humi.toFixed(1) + '%';
+                document.getElementById('light-value').textContent = light.toLocaleString() + ' lux';
+
+                // Show source badge
+                const badge = document.getElementById('sensor-source-badge');
+                if (badge) {
+                    if (data.source === 'weather') {
+                        badge.textContent = '🌤️ WeatherAPI';
+                        badge.title = 'Dữ liệu từ WeatherAPI (MQTT chưa kết nối)';
+                        badge.style.color = '#f5a623';
+                    } else {
+                        badge.textContent = '📡 ESP32';
+                        badge.title = 'Dữ liệu từ cảm biến ESP32';
+                        badge.style.color = '#4caf50';
+                    }
+                }
             }
         })
         .catch(error => console.log('Sensors not yet available:', error));

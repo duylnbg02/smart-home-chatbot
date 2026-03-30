@@ -43,12 +43,40 @@ class MQTTHandler:
         elif 'ac' in topic:
             self.states['ac']['bedroom'] = (payload == 'on')
 
+    def get_sensor_data(self) -> dict:
+        """Return sensor values with dashboard-compatible field names."""
+        s = self.states['sensors']
+        return {
+            'temperature': s.get('temp', 0.0),
+            'humidity':    s.get('humi', 0.0),
+            'light':       s.get('ligh', s.get('light', 0)),
+        }
+
+    def get_device_states(self) -> dict:
+        """Return device states in dashboard-compatible format."""
+        return {
+            'lights': dict(self.states['lights']),
+            'ac': {
+                'bedroom':     self.states['ac']['bedroom'],
+                'temperature': self.states['ac'].get('temp', 20),
+            }
+        }
+
     def send_command(self, dev_type, loc, val):
-        if not self.is_connected: return False
-        
+        # Optimistically update in-memory state so UI is consistent
+        if dev_type == 'light':
+            self.states['lights'][loc] = bool(val)
+        elif dev_type == 'ac':
+            self.states['ac'][loc] = bool(val)
+        elif dev_type == 'ac_temp':
+            self.states['ac']['temp'] = int(val)
+
+        if not self.is_connected:
+            return True  # state saved locally even without MQTT
+
         topic = f"esp32/{dev_type}/{loc}/command"
         if dev_type == 'ac_temp': topic = f"esp32/ac/{loc}/temperature"
-        
+
         payload = str(val).lower() if isinstance(val, bool) else str(val)
         res = self.client.publish(topic, payload, qos=1)
         return res.rc == mqtt.MQTT_ERR_SUCCESS
