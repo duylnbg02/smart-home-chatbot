@@ -6,99 +6,18 @@
     <title>Đăng Ký Khuôn Mặt - Smart Home</title>
     <link rel="stylesheet" href="css/face-register.css">
     <style>
-        /* ── Step progress bar ── */
-        .step-progress {
-            margin-bottom: 20px;
-        }
-        .step-circles {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0;
-            margin-bottom: 10px;
-        }
-        .step-circle {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 700;
-            border: 2px solid #cbd5e0;
-            background: #f7fafc;
-            color: #a0aec0;
-            transition: all 0.3s;
-            flex-shrink: 0;
-        }
-        .step-circle.done  { background: #48bb78; border-color: #48bb78; color: white; }
-        .step-circle.active { background: #667eea; border-color: #667eea; color: white; box-shadow: 0 0 0 4px rgba(102,126,234,0.2); }
-        .step-line {
-            flex: 1;
-            height: 3px;
-            background: #e2e8f0;
-            min-width: 20px;
-            max-width: 48px;
-            transition: background 0.3s;
-        }
-        .step-line.done { background: #48bb78; }
-        .step-label {
-            text-align: center;
-            font-size: 13px;
-            color: #667eea;
-            font-weight: 600;
-        }
-        .step-instruction {
-            text-align: center;
-            font-size: 14px;
-            color: #555;
-            margin-top: 6px;
-            min-height: 20px;
-        }
-        /* ── Capture button ── */
-        .btn-capture {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            width: 100%;
-            padding: 13px;
-            font-size: 15px;
-            font-weight: 700;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            margin-top: 14px;
-            transition: opacity 0.2s, transform 0.1s;
-        }
-        .btn-capture:hover:not(:disabled) { opacity: 0.9; transform: scale(1.01); }
-        .btn-capture:disabled { opacity: 0.55; cursor: not-allowed; }
-        /* ── Done state ── */
-        .done-box {
-            text-align: center;
-            padding: 20px 10px;
-            display: none;
-        }
-        .done-icon { font-size: 52px; margin-bottom: 10px; }
-        .done-title { font-size: 18px; font-weight: 700; color: #276749; margin-bottom: 6px; }
-        .done-sub   { font-size: 13px; color: #888; margin-bottom: 16px; }
-        .btn-restart {
-            background: #e2e8f0;
-            color: #555;
-            border: none;
-            padding: 9px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-        }
-        .btn-restart:hover { background: #cbd5e0; }
+        /* Step progress — overrides moved to face-register.css */
+        .step-circle.done  { background: #1a4731 !important; border-color: #68d391 !important; color: #68d391 !important; }
+        .step-circle.active { background: #0d1832 !important; border-color: #7b9cdc !important; color: #7b9cdc !important; box-shadow: 0 0 0 4px rgba(123,156,220,0.15) !important; }
+        .step-line.done { background: #68d391 !important; }
+        .step-label { color: #7b9cdc !important; }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header class="page-header">
         <button class="btn-back" onclick="goBack()">← Quay lại</button>
-        <h1>🔐 Đăng Ký Khuôn Mặt</h1>
+        <h1>Đăng Ký Khuôn Mặt</h1>
     </header>
 
     <!-- Main -->
@@ -171,9 +90,9 @@
 
             <!-- Tips Card -->
             <div class="register-card tips-card">
-                <h3>💡 Lưu ý</h3>
+                <h3>Lưu ý</h3>
                 <ul>
-                    <li><span class="tip-icon">☀️</span> Đảm bảo ánh sáng đầy đủ, tránh ngược sáng hoặc tối quá.</li>
+                    <li></span> Đảm bảo ánh sáng đầy đủ, tránh ngược sáng hoặc tối quá.</li>
                     <li><span class="tip-icon">1️⃣</span> Ảnh 1: Nhìn thẳng vào camera.</li>
                     <li><span class="tip-icon">2️⃣</span> Ảnh 2: Nghiêng nhẹ sang trái.</li>
                     <li><span class="tip-icon">3️⃣</span> Ảnh 3: Nghiêng nhẹ sang phải.</li>

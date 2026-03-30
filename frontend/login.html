@@ -3,88 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - AI Chatbot</title>
+    <title>Login - Smart Home</title>
     <link rel="stylesheet" href="css/login-style.css">
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-box">
-            <h1>🔐 Login</h1>
-            
-            <!-- Tab selection -->
-            <div class="tab-buttons">
-                <button class="tab-btn active" data-tab="credentials">Tài khoản</button>
-                <button class="tab-btn" data-tab="face">Nhận diện</button>
-            </div>
+    <div class="login-wrapper">
 
-            <!-- Credentials Login Tab -->
-            <div class="tab-content active" id="credentials-tab">
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="username">Tài khoản:</label>
-                        <input 
-                            type="text" 
-                            id="username" 
-                            name="username" 
-                            placeholder="Nhập tài khoản"
-                            required
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Mật khẩu:</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            placeholder="Nhập mật khẩu"
-                            required
-                        >
-                    </div>
-
-                    <button type="submit" class="btn-login">Đăng nhập</button>
-                    <div id="credentialsMessage" class="message"></div>
-                </form>
-            </div>
-
-            <!-- Face Recognition Tab -->
-            <div class="tab-content" id="face-tab">
-                <div class="face-recognition-area">
-                    <div class="webcam-container">
-                        <video 
-                            id="webcam" 
-                            width="320" 
-                            height="240" 
-                            autoplay 
-                            playsinline
-                        ></video>
-                        <canvas id="canvas" style="display:none;"></canvas>
-                    </div>
-
-                    <div class="face-controls">
-                        <button id="startCameraBtn" class="btn-camera">📹 Bật Camera</button>
-                        <button id="stopCameraBtn" class="btn-camera" style="display:none;">🛑 Tắt Camera</button>
-                        <button id="captureFaceBtn" class="btn-login" style="display:none;">📸 Nhận diện</button>
-                    </div>
-
-                    <div class="face-status" id="faceStatus"></div>
+        <!-- LEFT PANEL -->
+        <div class="left-panel">
+            <div class="wave-layer w1"></div>
+            <div class="wave-layer w2"></div>
+            <div class="wave-layer w3"></div>
+            <div class="wave-layer w4"></div>
+            <div class="left-content">
+                <div class="welcome-tag">SMART HOME</div>
+                <h1 class="welcome-title">WELCOME</h1>
+                <p class="welcome-sub">Hệ thống nhà thông minh<br>được tích hợp AI</p>
+                <div class="welcome-dots">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
                 </div>
             </div>
-
-            <hr class="divider">
-            
-            <p class="signup-link">
-                Chưa có tài khoản? <a href="javascript:alert('Liên hệ admin để tạo tài khoản')">Đăng ký</a>
-            </p>
         </div>
 
-        <!-- Loading spinner -->
-        <div id="loadingSpinner" class="spinner" style="display:none;">
-            <div class="spinner-border"></div>
-            <p>Đang xử lý...</p>
+        <!-- RIGHT PANEL -->
+        <div class="right-panel">
+            <div class="form-wrapper">
+                <h2 class="form-title">Đăng nhập</h2>
+                <p class="form-sub">Chào mừng bạn trở lại 👋</p>
+
+                <!-- Tabs -->
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="credentials">🔑 Tài khoản</button>
+                    <button class="tab-btn" data-tab="face">👤 Nhận diện</button>
+                </div>
+
+                <!-- Credentials Tab -->
+                <div class="tab-content active" id="credentials-tab">
+                    <form id="loginForm">
+                        <div class="input-group">
+                            <input type="text" id="username" name="username"
+                                placeholder="Tên tài khoản" required autocomplete="username">
+                            <span class="input-icon">👤</span>
+                        </div>
+                        <div class="input-group">
+                            <input type="password" id="password" name="password"
+                                placeholder="Mật khẩu" required autocomplete="current-password">
+                            <span class="input-icon">🔒</span>
+                        </div>
+                        <button type="submit" class="btn-login">Đăng nhập</button>
+                        <div id="credentialsMessage" class="message"></div>
+                    </form>
+                </div>
+
+                <!-- Face Tab -->
+                <div class="tab-content" id="face-tab">
+                    <div class="face-recognition-area">
+                        <div class="webcam-container">
+                            <video id="webcam" width="320" height="240" autoplay playsinline></video>
+                            <canvas id="canvas" style="display:none;"></canvas>
+                            <div class="scan-line"></div>
+                        </div>
+                        <div class="face-controls">
+                            <button id="startCameraBtn" class="btn-camera">📹 Bật Camera</button>
+                            <button id="stopCameraBtn" class="btn-camera" style="display:none;">🛑 Tắt Camera</button>
+                            <button id="captureFaceBtn" class="btn-login" style="display:none;">📸 Nhận diện ngay</button>
+                        </div>
+                        <div class="face-status" id="faceStatus"></div>
+                    </div>
+                </div>
+
+                <p class="signup-link">
+                    Chưa có tài khoản?
+                    <a href="javascript:alert('Liên hệ admin để tạo tài khoản')">Đăng ký</a>
+                </p>
+            </div>
         </div>
+
+    </div>
+
+    <!-- Loading spinner -->
+    <div id="loadingSpinner" class="spinner" style="display:none;">
+        <div class="spinner-ring"></div>
+        <p>Đang xử lý...</p>
     </div>
 
     <script src="js/login.js"></script>
 </body>
 </html>
+

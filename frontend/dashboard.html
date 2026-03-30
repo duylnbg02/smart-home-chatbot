@@ -10,17 +10,17 @@
     <div class="dashboard-container">
         <header class="dashboard-header">
             <div class="header-content">
-                <h1>🏠 Smart Home </h1>
+                <h1> SMART HOME </h1>
                 <div class="user-info">
                     <span id="username">User</span>
                     <button class="face-icon-btn" onclick="checkFaceRegistration()" title="Nhận diện khuôn mặt">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="36" height="36">
-                            <polyline points="10,35 10,10 35,10" fill="none" stroke="#667eea" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-                            <polyline points="85,10 110,10 110,35" fill="none" stroke="#667eea" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-                            <polyline points="10,85 10,110 35,110" fill="none" stroke="#667eea" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-                            <polyline points="85,110 110,110 110,85" fill="none" stroke="#667eea" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                            <polyline points="10,35 10,10 35,10" fill="none" stroke="#7b9cdc" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                            <polyline points="85,10 110,10 110,35" fill="none" stroke="#7b9cdc" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                            <polyline points="10,85 10,110 35,110" fill="none" stroke="#7b9cdc" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                            <polyline points="85,110 110,110 110,85" fill="none" stroke="#7b9cdc" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
                             <circle cx="60" cy="43" r="19" fill="#f5a623"/>
-                            <path d="M28,112 Q28,74 60,66 Q92,74 92,112 Z" fill="#667eea"/>
+                            <path d="M28,112 Q28,74 60,66 Q92,74 92,112 Z" fill="#7b9cdc"/>
                             <line x1="14" y1="70" x2="106" y2="70" stroke="#f5a623" stroke-width="3.5" stroke-dasharray="5,3"/>
                         </svg>
                     </button>
@@ -104,7 +104,7 @@
 
             <!-- Sensors Section -->
             <div class="sensors-section">
-                <h2>📊 Cảm Biến <span id="sensor-source-badge" style="font-size:0.7em;font-weight:normal;margin-left:8px;"></span></h2>
+                <h2> Cảm Biến <span id="sensor-source-badge" style="font-size:0.7em;font-weight:normal;margin-left:8px;"></span></h2>
                 <div class="sensors-grid">
                     <!-- Temperature Sensor -->
                     <div class="sensor-card">
@@ -147,8 +147,36 @@
         
         <div class="chatbot-window" id="chatbot-window" style="display: none;">
             <div class="chatbot-header">
-                <h3>Chat với AI</h3>
-                <button class="close-btn" onclick="toggleChatbot()">×</button>
+                <div class="chatbot-header-left">
+                    <div class="chatbot-logo">
+                        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+                            <circle cx="18" cy="18" r="17" fill="#1f3060" stroke="#7b9cdc" stroke-width="1.5"/>
+                            <rect x="9" y="12" width="18" height="13" rx="4" fill="#7b9cdc" opacity="0.18"/>
+                            <rect x="9" y="12" width="18" height="13" rx="4" stroke="#7b9cdc" stroke-width="1.5"/>
+                            <circle cx="14" cy="18" r="2" fill="#7b9cdc"/>
+                            <circle cx="22" cy="18" r="2" fill="#7b9cdc"/>
+                            <path d="M14 24 L14 27" stroke="#7b9cdc" stroke-width="1.5" stroke-linecap="round"/>
+                            <path d="M22 24 L22 27" stroke="#7b9cdc" stroke-width="1.5" stroke-linecap="round"/>
+                            <path d="M12 24 L24 24" stroke="#7b9cdc" stroke-width="1.5" stroke-linecap="round"/>
+                            <path d="M18 9 L18 12" stroke="#7b9cdc" stroke-width="1.5" stroke-linecap="round"/>
+                            <circle cx="18" cy="8" r="1.5" fill="#7b9cdc"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Chat với AI</h3>
+                        <span class="chatbot-header-sub">Smart Home Assistant</span>
+                    </div>
+                </div>
+                <div class="chatbot-header-actions">
+                    <a href="chatbot.html" class="chatbot-open-btn" title="Mở trang chat đầy đủ" target="_blank">
+                        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+                            <path d="M11 3H17V9" stroke="#8ea4c8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M17 3L9 11" stroke="#8ea4c8" stroke-width="1.6" stroke-linecap="round"/>
+                            <path d="M8 5H4C3.45 5 3 5.45 3 6V16C3 16.55 3.45 17 4 17H14C14.55 17 15 16.55 15 16V12" stroke="#8ea4c8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                    <button class="close-btn" onclick="toggleChatbot()">×</button>
+                </div>
             </div>
             <div class="chatbot-messages" id="chatbot-messages"></div>
             <div class="chatbot-input">
