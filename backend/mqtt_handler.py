@@ -1,20 +1,26 @@
 import paho.mqtt.client as mqtt
 import json
 import threading
+import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv(r"D:\AI\.env")
 
 class MQTTHandler:
     """
     Xử lý kết nối MQTT với ESP32
     """
     
-    def __init__(self, broker_address='caa7699a09b24a26b5b945f5db6af243.s1.eu.hivemq.cloud', port=8883):
-        self.broker_address = broker_address
-        self.port = port
+    def __init__(self, broker_address=None, port=None):
+        self.broker_address = broker_address or os.getenv('MQTT_BROKER', 'caa7699a09b24a26b5b945f5db6af243.s1.eu.hivemq.cloud')
+        self.port = port or int(os.getenv('MQTT_PORT', '8883'))
         self.client = mqtt.Client(client_id='chatbot-server')
         self.client.tls_set(ca_certs=None, certfile=None, keyfile=None, cert_reqs=mqtt.ssl.CERT_REQUIRED, tls_version=mqtt.ssl.PROTOCOL_TLSv1_2, ciphers=None)
         self.client.tls_insecure_set(False)
-        self.client.username_pw_set('mqtt-backend', 'Test1234')
+        mqtt_username = os.getenv('MQTT_USERNAME', '')
+        mqtt_password = os.getenv('MQTT_PASSWORD', '')
+        self.client.username_pw_set(mqtt_username, mqtt_password)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect

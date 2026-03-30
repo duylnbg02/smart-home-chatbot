@@ -7,16 +7,16 @@ class IntentDetector:
                 'keywords': ['xin chào', 'hello', 'hi', 'chào', 'hey', 'halo']
             },
             'control_device': {
-                'keywords': ['bật', 'tắt', 'bat', 'tat', 'mở', 'mo', 'turn on', 'turn off']
+                'keywords': ['bật', 'tắt', 'mở', 'đóng', 'tăng', 'giảm']
             },
             'check_status': {
-                'keywords': ['trạng thái', 'trang thai', 'kiểm tra', 'kiem tra', 'status', 'đang bật', 'dang bat']
+                'keywords': ['trạng thái', 'kiểm tra', 'đang bật', 'đang tắt']
             },
             'query_sensor': {
-                'keywords': ['nhiệt độ', 'nhiet do', 'độ ẩm', 'do am', 'ánh sáng', 'anh sang', 'độ', 'temperature', 'humidity', 'light']
+                'keywords': ['nhiệt độ', 'độ ẩm', 'ánh sáng', 'độ']
             },
             'set_value': {
-                'keywords': ['đặt', 'dat', 'cài đặt', 'cai dat', 'độ', 'độC', 'độ c', 'độ C']
+                'keywords': ['đặt', 'cài đặt', 'độ']
             },
             'farewell': {
                 'keywords': ['tạm biệt', 'bye', 'goodbye', 'see you', 'bye bye']

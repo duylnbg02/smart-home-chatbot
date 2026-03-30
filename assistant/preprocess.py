@@ -14,8 +14,8 @@ class TextPreprocessor:
         # Remove email addresses
         text = re.sub(r'\S+@\S+', '', text)
         
-        # Remove special characters but keep spaces and basic punctuation
-        text = re.sub(r'[^a-z0-9\s\.\,\!\?]', '', text)
+        # Remove special characters but keep spaces, basic punctuation and Unicode letters (tiếng Việt)
+        text = re.sub(r'[^\w\s\.\,\!\?]', '', text, flags=re.UNICODE)
         
         # Remove extra whitespace
         text = re.sub(r'\s+', ' ', text).strip()

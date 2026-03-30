@@ -1,0 +1,8 @@
+{
+  "build_time": "2026-02-08T15:03:57.353460",
+  "build_mode": "auto-save",
+  "total_chunks": 1972,
+  "chunks_marked_embedded": 1972,
+  "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "strategy": "1 chunk = 1 vector (granular for precision)"
+}
