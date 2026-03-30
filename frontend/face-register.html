@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký Khuôn Mặt - Smart Home</title>
+    <link rel="stylesheet" href="css/face-register.css">
+    <style>
+        /* ── Step progress bar ── */
+        .step-progress {
+            margin-bottom: 20px;
+        }
+        .step-circles {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 10px;
+        }
+        .step-circle {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            border: 2px solid #cbd5e0;
+            background: #f7fafc;
+            color: #a0aec0;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .step-circle.done  { background: #48bb78; border-color: #48bb78; color: white; }
+        .step-circle.active { background: #667eea; border-color: #667eea; color: white; box-shadow: 0 0 0 4px rgba(102,126,234,0.2); }
+        .step-line {
+            flex: 1;
+            height: 3px;
+            background: #e2e8f0;
+            min-width: 20px;
+            max-width: 48px;
+            transition: background 0.3s;
+        }
+        .step-line.done { background: #48bb78; }
+        .step-label {
+            text-align: center;
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .step-instruction {
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+            margin-top: 6px;
+            min-height: 20px;
+        }
+        /* ── Capture button ── */
+        .btn-capture {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 100%;
+            padding: 13px;
+            font-size: 15px;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 14px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-capture:hover:not(:disabled) { opacity: 0.9; transform: scale(1.01); }
+        .btn-capture:disabled { opacity: 0.55; cursor: not-allowed; }
+        /* ── Done state ── */
+        .done-box {
+            text-align: center;
+            padding: 20px 10px;
+            display: none;
+        }
+        .done-icon { font-size: 52px; margin-bottom: 10px; }
+        .done-title { font-size: 18px; font-weight: 700; color: #276749; margin-bottom: 6px; }
+        .done-sub   { font-size: 13px; color: #888; margin-bottom: 16px; }
+        .btn-restart {
+            background: #e2e8f0;
+            color: #555;
+            border: none;
+            padding: 9px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .btn-restart:hover { background: #cbd5e0; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="page-header">
+        <button class="btn-back" onclick="goBack()">← Quay lại</button>
+        <h1>🔐 Đăng Ký Khuôn Mặt</h1>
+    </header>
+
+    <!-- Main -->
+    <main class="register-main">
+        <div class="register-grid">
+
+            <!-- Camera Card -->
+            <div class="register-card">
+                <h3>📷 Camera</h3>
+                <div class="webcam-container">
+                    <div class="webcam-placeholder" id="webcam-placeholder">
+                        <p>📷</p>
+                        <p>Nhấn "Bật Camera" để bắt đầu</p>
+                    </div>
+                    <video id="webcam" autoplay playsinline></video>
+                    <canvas id="face-canvas"></canvas>
+                </div>
+                <div class="webcam-buttons">
+                    <button class="btn-face-start" id="btn-start" onclick="startWebcam()">▶ Bật Camera</button>
+                    <button class="btn-face-stop"  id="btn-stop"  onclick="stopWebcam()">⏹ Tắt Camera</button>
+                </div>
+            </div>
+
+            <!-- Register Card -->
+            <div class="register-card">
+                <h3>➕ Đăng Ký (5 ảnh)</h3>
+
+                <!-- Progress steps -->
+                <div class="step-progress">
+                    <div class="step-circles">
+                        <div class="step-circle active" id="sc-1">1</div>
+                        <div class="step-line"          id="sl-1"></div>
+                        <div class="step-circle"        id="sc-2">2</div>
+                        <div class="step-line"          id="sl-2"></div>
+                        <div class="step-circle"        id="sc-3">3</div>
+                        <div class="step-line"          id="sl-3"></div>
+                        <div class="step-circle"        id="sc-4">4</div>
+                        <div class="step-line"          id="sl-4"></div>
+                        <div class="step-circle"        id="sc-5">5</div>
+                    </div>
+                    <div class="step-label" id="step-label">Ảnh 1 / 5</div>
+                    <div class="step-instruction" id="step-instruction">Nhìn thẳng vào camera</div>
+                </div>
+
+                <!-- Capture section -->
+                <div id="capture-section">
+                    <button class="btn-capture" id="btn-capture" onclick="captureStep()">
+                        📸 Chụp ảnh 1 / 5
+                    </button>
+                    <div id="step-result" class="face-result"></div>
+                </div>
+
+                <!-- Done state -->
+                <div class="done-box" id="done-box">
+                    <div class="done-icon">✅</div>
+                    <div class="done-title">Đăng ký hoàn tất!</div>
+                    <div class="done-sub">5 / 5 ảnh đã được lưu thành công.</div>
+                    <button class="btn-restart" onclick="restartRegistration()">🔄 Đăng ký lại</button>
+                </div>
+
+                <!-- Face list -->
+                <div class="face-list-header">
+                    <h4>Danh sách đã đăng ký</h4>
+                    <button class="btn-refresh" onclick="loadFaceList()">🔄 Làm mới</button>
+                </div>
+                <ul id="face-list" class="face-list">
+                    <li>Đang tải...</li>
+                </ul>
+            </div>
+
+            <!-- Tips Card -->
+            <div class="register-card tips-card">
+                <h3>💡 Lưu ý</h3>
+                <ul>
+                    <li><span class="tip-icon">☀️</span> Đảm bảo ánh sáng đầy đủ, tránh ngược sáng hoặc tối quá.</li>
+                    <li><span class="tip-icon">1️⃣</span> Ảnh 1: Nhìn thẳng vào camera.</li>
+                    <li><span class="tip-icon">2️⃣</span> Ảnh 2: Nghiêng nhẹ sang trái.</li>
+                    <li><span class="tip-icon">3️⃣</span> Ảnh 3: Nghiêng nhẹ sang phải.</li>
+                    <li><span class="tip-icon">4️⃣</span> Ảnh 4: Ngẩng đầu lên nhẹ.</li>
+                    <li><span class="tip-icon">5️⃣</span> Ảnh 5: Cúi đầu xuống nhẹ.</li>
+                    <li><span class="tip-icon">🔄</span> Nếu nhận diện sai, nhấn "Đăng ký lại" để chụp lại toàn bộ.</li>
+                </ul>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let webcamStream = null;
+        let currentStep  = 1;
+        let isCapturing  = false;
+
+        const STEP_INSTRUCTIONS = [
+            '',                                   // index 0 unused
+            'Nhìn thẳng vào camera',              // 1
+            'Nghiêng nhẹ sang trái',              // 2
+            'Nghiêng nhẹ sang phải',              // 3
+            'Ngẩng đầu lên nhẹ',                  // 4
+            'Cúi đầu xuống nhẹ'                   // 5
+        ];
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const user = localStorage.getItem('user');
+            if (!user) { window.location.href = 'login.html'; return; }
+            loadFaceList();
+            updateStepUI(1);
+        });
+
+        function goBack() {
+            stopWebcam();
+            window.location.href = 'dashboard.html';
+        }
+
+        /* ──────────────────── Webcam ──────────────────── */
+        function startWebcam() {
+            navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+                .then(stream => {
+                    webcamStream = stream;
+                    const video = document.getElementById('webcam');
+                    video.srcObject = stream;
+                    video.classList.add('active');
+                    document.getElementById('webcam-placeholder').style.display = 'none';
+                    document.getElementById('btn-start').style.display = 'none';
+                    document.getElementById('btn-stop').style.display  = 'block';
+                })
+                .catch(err => alert('Không thể truy cập camera: ' + err.message));
+        }
+
+        function stopWebcam() {
+            if (webcamStream) { webcamStream.getTracks().forEach(t => t.stop()); webcamStream = null; }
+            const video = document.getElementById('webcam');
+            video.srcObject = null;
+            video.classList.remove('active');
+            document.getElementById('webcam-placeholder').style.display = 'flex';
+            document.getElementById('btn-start').style.display = 'block';
+            document.getElementById('btn-stop').style.display  = 'none';
+        }
+
+        /* ──────────────────── Progress UI ──────────────────── */
+        function updateStepUI(step) {
+            currentStep = step;
+            for (let i = 1; i <= 5; i++) {
+                const circle = document.getElementById(`sc-${i}`);
+                circle.className = 'step-circle' + (i < step ? ' done' : i === step ? ' active' : '');
+
+                if (i < 5) {
+                    const line = document.getElementById(`sl-${i}`);
+                    line.className = 'step-line' + (i < step ? ' done' : '');
+                }
+            }
+            document.getElementById('step-label').textContent       = `Ảnh ${step} / 5`;
+            document.getElementById('step-instruction').textContent = STEP_INSTRUCTIONS[step] || '';
+            document.getElementById('btn-capture').textContent      = `📸 Chụp ảnh ${step} / 5`;
+            document.getElementById('btn-capture').disabled         = false;
+            clearResult();
+        }
+
+        function clearResult() {
+            const el = document.getElementById('step-result');
+            el.textContent = '';
+            el.className   = 'face-result';
+        }
+
+        function showResult(message, type) {
+            const el = document.getElementById('step-result');
+            el.textContent = message;
+            el.className   = 'face-result visible ' + type;
+        }
+
+        /* ──────────────────── Capture & Upload ──────────────────── */
+        async function captureStep() {
+            if (isCapturing) return;
+
+            const video  = document.getElementById('webcam');
+            const canvas = document.getElementById('face-canvas');
+            if (!webcamStream || video.readyState < 2) {
+                alert('Vui lòng bật camera trước!');
+                return;
+            }
+
+            isCapturing = true;
+            document.getElementById('btn-capture').disabled = true;
+            showResult(`⏳ Đang xử lý ảnh ${currentStep}...`, 'loading');
+
+            canvas.width  = video.videoWidth  || 640;
+            canvas.height = video.videoHeight || 480;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const formData = new FormData();
+            formData.append('image',       blob, 'face.jpg');
+            formData.append('user_id',     userData.user_id  || 'unknown');
+            formData.append('username',    userData.username || 'unknown');
+            formData.append('image_index', String(currentStep));
+
+            try {
+                const res  = await fetch(`${API_BASE}/register-face`, { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (res.ok && !data.error) {
+                    showResult(`✅ Ảnh ${currentStep} đã lưu!`, 'success');
+
+                    if (currentStep < 5) {
+                        setTimeout(() => {
+                            updateStepUI(currentStep + 1);
+                            isCapturing = false;
+                        }, 900);
+                    } else {
+                        // All 5 done
+                        setTimeout(() => {
+                            document.getElementById('capture-section').style.display = 'none';
+                            document.getElementById('done-box').style.display        = 'block';
+                            isCapturing = false;
+                            loadFaceList();
+                        }, 900);
+                    }
+                } else {
+                    showResult(`❌ ${data.error || data.message || 'Lỗi không xác định'}`, 'error');
+                    document.getElementById('btn-capture').disabled = false;
+                    isCapturing = false;
+                }
+            } catch (e) {
+                showResult('❌ Lỗi kết nối server', 'error');
+                document.getElementById('btn-capture').disabled = false;
+                isCapturing = false;
+            }
+        }
+
+        /* ──────────────────── Restart ──────────────────── */
+        function restartRegistration() {
+            document.getElementById('done-box').style.display        = 'none';
+            document.getElementById('capture-section').style.display = 'block';
+            updateStepUI(1);
+        }
+
+        /* ──────────────────── Face list ──────────────────── */
+        async function loadFaceList() {
+            const list = document.getElementById('face-list');
+            list.innerHTML = '<li>Đang tải...</li>';
+            try {
+                const res  = await fetch(`${API_BASE}/faces`);
+                const data = await res.json();
+                if (data.faces && data.faces.length > 0) {
+                    list.innerHTML = data.faces.map(f =>
+                        `<li>👤 <strong>${f.username}</strong> — ${f.encodings_count} ảnh</li>`
+                    ).join('');
+                } else {
+                    list.innerHTML = '<li>Chưa có khuôn mặt nào được đăng ký</li>';
+                }
+            } catch (e) {
+                list.innerHTML = '<li>Không thể tải danh sách</li>';
+            }
+        }
+    </script>
+</body>
+</html>

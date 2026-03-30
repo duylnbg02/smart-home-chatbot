@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 # Try to import face_recognition, but don't fail if models not available
 try:
-    from backend.face_recognition_handler import FaceRecognitionHandler
+    from backend.face_recognition import FaceRecognitionHandler
     FACE_RECOGNITION_AVAILABLE = True
 except Exception as e:
     print(f"⚠️  Face recognition not available: {e}")
@@ -255,7 +255,7 @@ class AuthHandler:
                 'message': f'Lỗi: {str(e)}'
             }
     
-    def register_face_for_user(self, user_id, username, image_array):
+    def register_face_for_user(self, user_id, username, image_array, image_index=1):
         """
         Đăng ký khuôn mặt cho user
         
@@ -269,11 +269,11 @@ class AuthHandler:
         """
         try:
             result = self.face_handler.register_face_from_image(
-                user_id, username, image_array
+                user_id, username, image_array, image_index
             )
             
             # Update user trong database
-            if result['success'] and self.db:
+            if result['success'] and self.db is not None:
                 try:
                     users_collection = self.db['users']
                     users_collection.update_one(

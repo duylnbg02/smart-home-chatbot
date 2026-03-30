@@ -232,15 +232,46 @@ function displayMessage(text, sender) {
 // Logout
 function logout() {
     if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-        // Xóa toàn bộ localStorage
         localStorage.clear();
-        // Hoặc xóa từng item cụ thể
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         localStorage.removeItem('user_id');
         localStorage.removeItem('username');
         localStorage.removeItem('session_id');
-        // Redirect và clear cache
         window.location.href = 'login.html?logout=true';
     }
 }
+
+// ============================================================
+//  FACE RECOGNITION BANNER
+// ============================================================
+
+async function checkFaceRegistration() {
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId   = userData.user_id || localStorage.getItem('user_id');
+
+    try {
+        const noticeEl = document.getElementById('face-header-notice');
+        if (noticeEl) {
+            noticeEl.style.display = 'inline-block';
+            noticeEl.className = 'face-header-notice loading';
+        }
+
+        const res  = await fetch(`${API_BASE}/faces`);
+        const data = await res.json();
+
+        const alreadyRegistered = data.faces &&
+            data.faces.some(f => String(f.user_id) === String(userId));
+
+        if (alreadyRegistered && noticeEl) {
+            noticeEl.className = 'face-header-notice success';
+            noticeEl.textContent = '✅ Bạn đã đăng ký khuôn mặt';
+        }
+
+        // Always navigate after short delay
+        setTimeout(() => { window.location.href = 'face-register.html'; }, 800);
+    } catch (e) {
+        window.location.href = 'face-register.html';
+    }
+}
+

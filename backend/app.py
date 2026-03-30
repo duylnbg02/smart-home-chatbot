@@ -4,6 +4,7 @@ import uuid
 from PIL import Image
 import io
 import numpy as np
+import logging
 from backend.constants import APP_HOST, APP_PORT, DEBUG, CORS_ORIGINS
 from backend.mqtt_handler import get_mqtt_handler, init_mqtt
 
@@ -145,6 +146,7 @@ def register_face():
         
         user_id = request.form.get('user_id')
         username = request.form.get('username')
+        image_index = int(request.form.get('image_index', 1))
         
         if not user_id or not username:
             return jsonify({'error': 'Missing user_id or username'}), 400
@@ -160,19 +162,34 @@ def register_face():
         
         # Register face
         auth = AuthHandler(db)
-        result = auth.register_face_for_user(user_id, username, image_array)
+        result = auth.register_face_for_user(user_id, username, image_array, image_index)
         
         if result['success']:
             return jsonify({
                 'message': result['message'],
+                'image_index': result.get('image_index', image_index),
                 'encodings_count': result.get('encodings_count', 0)
             }), 200
         else:
+            print(f"❌ /register-face 400: user={username} idx={image_index} → {result['message']}")
             return jsonify({'error': result['message']}), 400
     
     except Exception as e:
         print(f"❌ Register face error: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/faces', methods=['GET'])
+def list_faces():
+    """Trả về danh sách users đã đăng ký khuôn mặt."""
+    try:
+        from backend.face_recognition import FaceRecognitionHandler
+        face_db = get_db("chatbot") if db is None else db
+        handler = FaceRecognitionHandler(db=face_db)
+        faces = handler.list_registered_faces()
+        return jsonify({'success': True, 'faces': faces}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/logout', methods=['POST'])
 def logout():
@@ -487,6 +504,12 @@ def home():
     return jsonify({'message': 'AI Chatbot API is running!'}), 200
 
 if __name__ == '__main__':
+    # Suppress noisy access logs for polling endpoints
+    class _NoSensorsLog(logging.Filter):
+        def filter(self, record):
+            return '/sensors/data' not in record.getMessage()
+    logging.getLogger('werkzeug').addFilter(_NoSensorsLog())
+
     print(f"🚀 Starting Chatbot Server on http://{APP_HOST}:{APP_PORT}")
     print(f"📝 Frontend: Open http://localhost:8000")
     app.run(host=APP_HOST, port=APP_PORT, debug=DEBUG)
