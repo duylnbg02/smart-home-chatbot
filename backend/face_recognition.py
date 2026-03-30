@@ -5,17 +5,9 @@ from pathlib import Path
 import pickle
 from datetime import datetime
 
-# Lazy import face_recognition to avoid model loading issues
 face_recognition = None
 
-
 class FaceRecognitionHandler:
-    """
-    Xử lý nhận diện khuôn mặt.
-    Collection: face_credentials
-    Schema: { _id, userid, username, embedded (bytes), image_index (int 1-5), created_at }
-    """
-
     TOLERANCE = 0.6
     MAX_PHOTOS = 5
     FACES_DIR = Path(__file__).parent.parent / "faces" / "encodings"
@@ -33,12 +25,8 @@ class FaceRecognitionHandler:
 
         self.db = db
         self._collection = db["face_credentials"] if db is not None else None
-
-        # RAM cache: list of {user_id, username, encoding}
         self._cache: list = []
         self._cache_loaded = False
-
-    # ------------------------------------------------------------------ #
 
     def _import_fr(self):
         global face_recognition
@@ -46,10 +34,6 @@ class FaceRecognitionHandler:
             import face_recognition as fr
             face_recognition = fr
         return face_recognition
-
-    # ------------------------------------------------------------------ #
-    #  Cache                                                               #
-    # ------------------------------------------------------------------ #
 
     def _load_cache(self):
         self._cache = []
@@ -68,7 +52,6 @@ class FaceRecognitionHandler:
                 except Exception:
                     pass
         self._cache_loaded = True
-        print(f"✅ Face cache: {len(self._cache)} embeddings")
 
     def _invalidate_cache(self):
         self._cache_loaded = False
@@ -79,52 +62,41 @@ class FaceRecognitionHandler:
             self._load_cache()
         return self._cache
 
-    # ------------------------------------------------------------------ #
-    #  Save image to disk                                                  #
-    # ------------------------------------------------------------------ #
-
-    def _save_face_image(self, user_id: str, username: str, image_index: int, image_array: np.ndarray):
+    def _save_face_image(self, user_id: str, username: str, image_index: int,
+        image_array: np.ndarray, suffix: str = "") -> str | None:
         try:
-            from PIL import Image
-            filename = Path(self.encodings_dir) / f"{user_id}_{username}_{image_index}.jpg"
-            img = Image.fromarray(image_array.astype(np.uint8))
-            img.save(str(filename), "JPEG", quality=85)
-            print(f"💾 Lưu ảnh: {filename.name}")
-        except Exception as e:
-            print(f"⚠️  Không thể lưu ảnh: {e}")
-
-    # ------------------------------------------------------------------ #
-    #  Public API                                                          #
-    # ------------------------------------------------------------------ #
+            from PIL import Image as PILImage
+            save_dir = Path(self.encodings_dir)
+            save_dir.mkdir(parents=True, exist_ok=True)
+            name = f"{user_id}_{username}_{image_index}{suffix}.jpg"
+            filepath = save_dir / name
+            img = PILImage.fromarray(image_array.astype(np.uint8))
+            img.save(str(filepath), "JPEG", quality=85)
+            return str(filepath)
+        except Exception:
+            return None
 
     def register_face_from_image(self, user_id: str, username: str,
-                                 image_array: np.ndarray, image_index: int = 1) -> dict:
-        """
-        Đăng ký 1 ảnh khuôn mặt → ghi 1 document vào face_credentials.
-        image_index: 1..5 (vị trí ảnh trong bộ 5 ảnh)
-        """
+        image_array: np.ndarray, image_index: int = 1) -> dict:
         try:
+            self._save_face_image(user_id, username, image_index, image_array, suffix="_raw")
             fr = self._import_fr()
 
-            # Detect face
             face_locations = fr.face_locations(image_array, model='hog')
             if not face_locations:
                 return {'success': False, 'message': 'Không phát hiện khuôn mặt. Vui lòng chụp lại rõ hơn.'}
+            
             if len(face_locations) > 1:
                 return {'success': False, 'message': f'Phát hiện {len(face_locations)} khuôn mặt. Chỉ để 1 khuôn mặt.'}
 
-            # Extract encoding
             encodings = fr.face_encodings(image_array, face_locations)
             if not encodings:
                 return {'success': False, 'message': 'Không thể trích xuất đặc trưng. Vui lòng thử lại.'}
+            
             encoding = encodings[0]
-
-            # Save image to disk
             self._save_face_image(user_id, username, image_index, image_array)
 
-            # Write to face_credentials
             if self._collection is not None:
-                # Remove old document with same userid + image_index (re-register)
                 self._collection.delete_one({'userid': user_id, 'image_index': image_index})
                 self._collection.insert_one({
                     '_id': str(uuid.uuid4()),
@@ -135,26 +107,20 @@ class FaceRecognitionHandler:
                     'created_at': datetime.now()
                 })
                 total = self._collection.count_documents({'userid': user_id})
-                print(f"✅ face_credentials: {username} ảnh {image_index} (tổng {total})")
+                self._invalidate_cache()
+                return {
+                    'success': True,
+                    'message': f'Lưu ảnh {image_index} thành công!',
+                    'image_index': image_index,
+                    'encodings_count': total
+                }
             else:
                 return {'success': False, 'message': 'Không có kết nối cơ sở dữ liệu.'}
 
-            self._invalidate_cache()
-
-            return {
-                'success': True,
-                'message': f'Lưu ảnh {image_index} thành công!',
-                'image_index': image_index,
-                'encodings_count': total
-            }
-
         except Exception as e:
-            print(f"❌ register_face_from_image error: {e}")
-            import traceback; traceback.print_exc()
             return {'success': False, 'message': f'Lỗi: {str(e)}'}
 
     def recognize_faces(self, image_array: np.ndarray, tolerance: float = None) -> dict:
-        """So khớp khuôn mặt với tất cả embeddings trong face_credentials."""
         tol = tolerance if tolerance is not None else self.TOLERANCE
         try:
             fr = self._import_fr()
@@ -194,13 +160,12 @@ class FaceRecognitionHandler:
             if matched_users:
                 return {'success': True, 'matched_users': matched_users,
                         'face_count': len(face_locations),
-                        'message': f'Nhận diện được {len(matched_users)} khuôn mặt'}
+                        'message': f'Nhận diện thành công'}
+            
             return {'success': False, 'matched_users': [], 'face_count': len(face_locations),
                     'message': 'Khuôn mặt không khớp với bất kỳ user nào.'}
 
         except Exception as e:
-            print(f"❌ recognize_faces error: {e}")
-            import traceback; traceback.print_exc()
             return {'success': False, 'matched_users': [], 'face_count': 0, 'message': f'Lỗi: {str(e)}'}
 
     def has_user_face_encoding(self, user_id: str) -> bool:
@@ -209,7 +174,6 @@ class FaceRecognitionHandler:
         return False
 
     def list_registered_faces(self) -> list:
-        """Danh sách user đã đăng ký, gộp theo userid."""
         if self._collection is None:
             return []
         pipeline = [
@@ -228,4 +192,3 @@ class FaceRecognitionHandler:
             }}
         ]
         return list(self._collection.aggregate(pipeline))
-

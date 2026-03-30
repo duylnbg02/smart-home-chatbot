@@ -1,53 +1,27 @@
 import os
 from pymongo import MongoClient
-from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
 
-class MongoDBConnection:
-    _instance: Optional[MongoClient] = None
-    
-    def __init__(self, uri: str = None):
-        if MongoDBConnection._instance is None:
-            if uri is None:
-                uri = os.getenv(
-                    'MONGODB_URI',
-                    os.getenv('MONGO_URL', 'mongodb://localhost:27017')
-                )
-            
+class MongoDB:
+    _client = None
+
+    @classmethod
+    def get_db(cls, name="chatbot"):
+        if cls._client is None:
+            uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
             try:
-                MongoDBConnection._instance = MongoClient(uri, serverSelectionTimeoutMS=5000)
-                # Test connection
-                MongoDBConnection._instance.admin.command('ping')
-                print(f"✅ Connected to MongoDB: {uri}")
+                cls._client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+                cls._client.admin.command('ping')
             except Exception as e:
-                print(f"❌ MongoDB connection failed: {e}")
-                MongoDBConnection._instance = None
+                print(f"❌ MongoDB Error: {e}")
+                return None
+        return cls._client[name]
     
-    @staticmethod
-    def get_client() -> MongoClient:
-        if MongoDBConnection._instance is None:
-            MongoDBConnection()
-        return MongoDBConnection._instance
-    
-    @staticmethod
-    def get_database(db_name: str):
-        client = MongoDBConnection.get_client()
-        if client is None:
-            raise Exception("MongoDB is not connected")
-        return client[db_name]
-    
-    @staticmethod
-    def close():
-        if MongoDBConnection._instance:
-            MongoDBConnection._instance.close()
-            MongoDBConnection._instance = None
+def get_db(name="chatbot"):
+    return MongoDB.get_db(name)
 
-# Convenience functions
-def get_db(db_name: str = "chatbot"):
-    return MongoDBConnection.get_database(db_name)
-
-def get_collection(collection_name: str, db_name: str = "chatbot"):
+def get_col(col_name, db_name="chatbot"):
     db = get_db(db_name)
-    return db[collection_name]
+    return db[col_name] if db is not None else None

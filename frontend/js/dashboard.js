@@ -1,7 +1,5 @@
-// API Base URL
 const API_BASE = 'http://localhost:5000';
 
-// Device States
 const deviceStates = {
     lights: {
         living_room: false,
@@ -14,32 +12,26 @@ const deviceStates = {
     }
 };
 
-// Initialize
 document.addEventListener('DOMContentLoaded', function() {
     loadUserInfo();
     initDeviceStates();
     startSensorUpdates();
 });
 
-// Load user info from localStorage
 function loadUserInfo() {
     const userData = JSON.parse(localStorage.getItem('user'));
     if (userData) {
         document.getElementById('username').textContent = userData.username;
     } else {
-        // Redirect to login if not authenticated
         window.location.href = 'login.html';
     }
 }
 
-// Initialize device states from backend
 function initDeviceStates() {
-    // Request initial states from backend
     fetch(`${API_BASE}/devices/status`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Update device states
                 if (data.devices) {
                     deviceStates.lights = { ...deviceStates.lights, ...data.devices.lights };
                     deviceStates.ac = { ...deviceStates.ac, ...data.devices.ac };
@@ -50,9 +42,7 @@ function initDeviceStates() {
         .catch(error => console.log('Device status not yet available:', error));
 }
 
-// Update UI based on device states
 function updateDeviceUI() {
-    // Update lights
     Object.keys(deviceStates.lights).forEach(light => {
         const btn = document.getElementById(`light-${light}`);
         if (btn) {
@@ -66,7 +56,6 @@ function updateDeviceUI() {
         }
     });
 
-    // Update AC
     const acBtn = document.getElementById('ac-bedroom');
     if (acBtn) {
         if (deviceStates.ac.bedroom) {
@@ -77,34 +66,21 @@ function updateDeviceUI() {
             acBtn.textContent = 'Tắt';
         }
     }
-
-    // Update temperature display
     document.getElementById('temp-bedroom').value = deviceStates.ac.temperature;
 }
 
-// Toggle Light
 function toggleLight(room) {
     deviceStates.lights[room] = !deviceStates.lights[room];
-    
-    // Send to backend/MQTT
     sendCommand('light', room, deviceStates.lights[room]);
-    
-    // Update UI
     updateDeviceUI();
 }
 
-// Toggle AC
 function toggleAC(room) {
     deviceStates.ac[room] = !deviceStates.ac[room];
-    
-    // Send to backend/MQTT
     sendCommand('ac', room, deviceStates.ac[room]);
-    
-    // Update UI
     updateDeviceUI();
 }
 
-// Increase Temperature
 function increaseTemp(room) {
     if (deviceStates.ac.temperature < 30) {
         deviceStates.ac.temperature++;
@@ -113,7 +89,6 @@ function increaseTemp(room) {
     }
 }
 
-// Decrease Temperature
 function decreaseTemp(room) {
     if (deviceStates.ac.temperature > 16) {
         deviceStates.ac.temperature--;
@@ -122,7 +97,6 @@ function decreaseTemp(room) {
     }
 }
 
-// Send command to backend
 function sendCommand(type, location, value) {
     const payload = {
         type: type,
@@ -149,18 +123,16 @@ function sendCommand(type, location, value) {
     .catch(error => console.error('Command error:', error));
 }
 
-// Start sensor updates (every 5 seconds)
 function startSensorUpdates() {
     updateSensors();
     setInterval(updateSensors, 5000);
 }
 
-// Update sensor readings
 function updateSensors() {
     fetch(`${API_BASE}/sensors/data`)
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.sensors) {
+            if (data.sensors) {
                 document.getElementById('temp-value').textContent = 
                     data.sensors.temperature.toFixed(1) + '°C';
                 document.getElementById('humidity-value').textContent = 
@@ -172,7 +144,6 @@ function updateSensors() {
         .catch(error => console.log('Sensors not yet available:', error));
 }
 
-// Chatbot Functions
 function toggleChatbot() {
     const chatWindow = document.getElementById('chatbot-window');
     if (chatWindow.style.display === 'none') {
@@ -188,14 +159,12 @@ function sendChatMessage(event) {
     
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
-    
+
     if (!message) return;
 
-    // Display user message
     displayMessage(message, 'user');
     input.value = '';
 
-    // Send to backend
     fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: {
@@ -224,8 +193,6 @@ function displayMessage(text, sender) {
     messageEl.className = `message ${sender}`;
     messageEl.textContent = text;
     messagesDiv.appendChild(messageEl);
-    
-    // Scroll to bottom
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
@@ -241,10 +208,6 @@ function logout() {
         window.location.href = 'login.html?logout=true';
     }
 }
-
-// ============================================================
-//  FACE RECOGNITION BANNER
-// ============================================================
 
 async function checkFaceRegistration() {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -268,7 +231,6 @@ async function checkFaceRegistration() {
             noticeEl.textContent = '✅ Bạn đã đăng ký khuôn mặt';
         }
 
-        // Always navigate after short delay
         setTimeout(() => { window.location.href = 'face-register.html'; }, 800);
     } catch (e) {
         window.location.href = 'face-register.html';
