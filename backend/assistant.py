@@ -18,7 +18,7 @@ from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 
 # Load API keys
-load_dotenv(r"D:\AI\.env")
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 
 class ConversationContext:
@@ -56,6 +56,8 @@ class Assistant:
         self.mqtt = mqtt_handler or get_mqtt_handler()
         self.context = ConversationContext()
         self._init_rag()
+        from backend.weather_service import get_weather_service
+        self.weather_service = get_weather_service()
         
         self.knowledge_base = {
             'xin chào': 'Xin chào! Tôi có thể giúp gì cho bạn!',
@@ -81,6 +83,43 @@ class Assistant:
             'bật điều hòa phòng ngủ': {'device': 'ac', 'location': 'bedroom', 'action': True},
             'tắt điều hòa phòng ngủ': {'device': 'ac', 'location': 'bedroom', 'action': False},
         }
+
+        # Cached prompt templates (tránh tạo lại mỗi request)
+        self._prompt_article_summary = ChatPromptTemplate.from_template(
+            "Bạn là trợ lý tin tức thông minh.\n\n"
+            "Nội dung bài báo:\n{content}\n\n"
+            "Yêu cầu:\n"
+            "- KHÔNG bắt đầu bằng lời chào hay giới thiệu bản thân\n"
+            "- Bắt đầu ngay bằng tiêu đề bài: \"**{title}**\"\n"
+            "- Tóm tắt nội dung chính ngắn gọn, súc tích (2-3 đoạn)\n"
+            "- KHÔNG bịa đặt, CHỈ dùng thông tin có trong bài\n\n"
+            "Tóm tắt (tiếng Việt):"
+        )
+        self._prompt_detail = ChatPromptTemplate.from_template(
+            "Bạn là trợ lý tin tức thông minh.\n\n"
+            "Quy tắc:\n"
+            "- KHÔNG bắt đầu bằng lời chào hỏi (\"Chào bạn\", \"Hello\"...)\n"
+            "- Trả lời THẲNG VÀO NỘI DUNG — nêu đề tài, sự kiện chính ngay câu đầu tiên\n"
+            "- KHÔNG nói \"dựa trên ngữ cảnh\" hay \"theo context\"\n"
+            "- CHỈ dùng thông tin trong Context, KHÔNG bịa đặt\n"
+            "- Trả lời ĐẦY ĐỦ các điểm chính\n"
+            "- Chia thành đoạn nếu dài\n\n"
+            "Context:\n{context}\n\n"
+            "Câu hỏi: {question}\n\n"
+            "Trả lời chi tiết (tiếng Việt):"
+        )
+        self._prompt_summary = ChatPromptTemplate.from_template(
+            "Bạn là trợ lý tin tức thông minh.\n\n"
+            "Quy tắc:\n"
+            "- KHÔNG bắt đầu bằng lời chào hỏi (\"Chào bạn\", \"Hello\"...)\n"
+            "- Trả lời THẲNG VÀO NỘI DUNG — nêu đề tài hoặc sự kiện ngay câu đầu\n"
+            "- KHÔNG nói \"dựa trên ngữ cảnh\" hay \"theo context\"\n"
+            "- CHỈ dùng thông tin trong Context, KHÔNG bịa đặt\n"
+            "- NGẮN GỌN, đủ ý\n\n"
+            "Context:\n{context}\n\n"
+            "Câu hỏi: {question}\n\n"
+            "Trả lời ngắn gọn (tiếng Việt):"
+        )
     
     def _get_current_datetime_info(self):
         now = arrow.now('Asia/Ho_Chi_Minh')
@@ -118,16 +157,16 @@ class Assistant:
             else:
                 return f"{dt_info['weekday']}, {dt_info['today']}, {dt_info['time']}"
 
-        if any(word in message_lower for word in ['ngày mai', 'ngay mai', 'mai', 'tomorrow']):
+        if any(word in message_lower for word in ['ngày mai', 'ngay mai', 'tomorrow']):
             return f"Ngày mai là {dt_info['tomorrow_weekday']}, ngày {dt_info['tomorrow']}"
  
-        if any(word in message_lower for word in ['hôm qua', 'hom qua', 'qua', 'yesterday']):
+        if any(word in message_lower for word in ['hôm qua', 'hom qua', 'yesterday']):
             return f"Hôm qua là {dt_info['yesterday_weekday']}, ngày {dt_info['yesterday']}"
  
         if 'tháng' in message_lower or 'thang' in message_lower:
             return f"Tháng này là tháng {dt_info['month']}"
 
-        if 'năm' in message_lower or 'nam' in message_lower:
+        if 'năm' in message_lower:
             return f"Năm nay là năm {dt_info['year']}"
         return None
 
@@ -282,22 +321,8 @@ class Assistant:
                     if not chunks:
                         return f"Không tìm thấy nội dung bài '{title}'"
                     full_content = "\n\n".join([c.get('chunk', '') for c in chunks])
-                    prompt = ChatPromptTemplate.from_template("""
-Bạn là trợ lý tin tức thông minh.
-
-Nội dung bài báo:
-{content}
-
-Yêu cầu:
-- KHÔNG bắt đầu bằng lời chào hay giới thiệu bản thân
-- Bắt đầu ngay bằng tiêu đề bài: "**{title}**"
-- Tóm tắt nội dung chính ngắn gọn, súc tích (2-3 đoạn)
-- KHÔNG bịa đặt, CHỈ dùng thông tin có trong bài
-
-Tóm tắt (tiếng Việt):""")
-                    
                     try:
-                        chain = prompt | self.rag_llm | StrOutputParser()
+                        chain = self._prompt_article_summary | self.rag_llm | StrOutputParser()
                         summary = chain.invoke({
                             "content": full_content[:6000],
                             "title": title
@@ -414,41 +439,7 @@ Tóm tắt (tiếng Việt):""")
                 'nội dung', 'diễn biến', 'tình hình', 'giải thích'
             ])
 
-            if is_detailed_question:
-                prompt = ChatPromptTemplate.from_template("""
-Bạn là trợ lý tin tức thông minh.
-
-Quy tắc:
-- KHÔNG bắt đầu bằng lời chào hỏi ("Chào bạn", "Hello"...)
-- Trả lời THẲNG VÀO NỘI DUNG — nêu đề tài, sự kiện chính ngay câu đầu tiên
-- KHÔNG nói "dựa trên ngữ cảnh" hay "theo context"
-- CHỈ dùng thông tin trong Context, KHÔNG bịa đặt
-- Trả lời ĐẦY ĐỦ các điểm chính
-- Chia thành đoạn nếu dài
-
-Context:
-{context}
-
-Câu hỏi: {question}
-
-Trả lời chi tiết (tiếng Việt):""")
-            else:
-                prompt = ChatPromptTemplate.from_template("""
-Bạn là trợ lý tin tức thông minh.
-
-Quy tắc:
-- KHÔNG bắt đầu bằng lời chào hỏi ("Chào bạn", "Hello"...)
-- Trả lời THẲNG VÀO NỘI DUNG — nêu đề tài hoặc sự kiện ngay câu đầu
-- KHÔNG nói "dựa trên ngữ cảnh" hay "theo context"
-- CHỈ dùng thông tin trong Context, KHÔNG bịa đặt
-- NGẮN GỌN, đủ ý
-
-Context:
-{context}
-
-Câu hỏi: {question}
-
-Trả lời ngắn gọn (tiếng Việt):""")
+            prompt = self._prompt_detail if is_detailed_question else self._prompt_summary
 
             rag_chain = (
                 {
@@ -463,7 +454,10 @@ Trả lời ngắn gọn (tiếng Việt):""")
                 answer = rag_chain.invoke(message)
 
                 if not is_detailed_question:
-                    self.context.last_news_list = docs[:5]
+                    self.context.last_news_list = [
+                        {'title': d.metadata.get('title', ''), 'url': d.metadata.get('url', '')}
+                        for d in docs[:5]
+                    ]
             except Exception as llm_error:
                 error_msg = str(llm_error)
                 if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
@@ -479,8 +473,11 @@ Trả lời ngắn gọn (tiếng Việt):""")
 
                     titles = [doc.metadata.get('title', '') for doc in docs[:5] if doc.metadata.get('title')]
                     if titles:
-                        self.context.last_news_list = docs[:5]
-                        
+                        self.context.last_news_list = [
+                            {'title': d.metadata.get('title', ''), 'url': d.metadata.get('url', '')}
+                            for d in docs[:5]
+                        ]
+
                         answer = "Tin tức "
                         if is_today_query:
                             answer += "hôm nay:\n\n"
@@ -544,7 +541,6 @@ Trả lời ngắn gọn (tiếng Việt):""")
             return self._handle_set_value(user_message, entities)
         
         else:
-            message_lower = user_message.lower()
             for key, response in self.knowledge_base.items():
                 if key in message_lower:
                     return response
@@ -571,7 +567,6 @@ Trả lời ngắn gọn (tiếng Việt):""")
 
         match = re.search(r'(bật|tắt)\s+điều hòa\s+(phòng khách|phòng ngủ|phòng tắm)\s+(\d+)\s*độ', message_lower)
         if match:
-            action_word = match.group(1)
             room_vn = match.group(2)
             temp = int(match.group(3))
             room_map = {
@@ -673,49 +668,70 @@ Trả lời ngắn gọn (tiếng Việt):""")
         
         return "\n".join(status_lines)
 
+    def _get_sensor_data(self) -> dict:
+        """Lấy dữ liệu cảm biến: ưu tiên MQTT, fallback sang weather API"""
+        if self.mqtt:
+            data = self.mqtt.get_sensor_data()
+            # Nếu MQTT có dữ liệu thực (không phải 0)
+            if data.get('temperature', 0) != 0 or data.get('humidity', 0) != 0:
+                return {'source': 'mqtt', **data}
+
+        # Fallback sang weather service
+        weather = self.weather_service.get_current() if self.weather_service else None
+        if weather:
+            return {
+                'source': 'weather',
+                'temperature': weather['temperature'],
+                'humidity': weather['humidity'],
+                'light': weather.get('light', 0),
+                'city': weather.get('city', ''),
+                'condition': weather.get('condition', ''),
+            }
+
+        return {'source': 'none', 'temperature': 0, 'humidity': 0, 'light': 0}
+
     def _handle_sensor_query(self, message: str) -> str:
         """Xử lý truy vấn cảm biến"""
-        if not self.mqtt:
-            return "❌ Không thể đọc cảm biến - MQTT chưa kết nối!"
-        
-        sensors = self.mqtt.get_sensor_data()
+        sensors = self._get_sensor_data()
         message_lower = message.lower()
-        
+        source = sensors.get('source', 'none')
+        suffix = f" *(dữ liệu thời tiết tại {sensors.get('city', '')})*" if source == 'weather' else ''
+
         # Kiểm tra độ ẩm TRƯỚC (vì "độ" có thể match với "nhiệt độ")
         if 'độ ẩm' in message_lower or 'ẩm' in message_lower:
             humidity = sensors['humidity']
             if humidity < 40:
-                return f"Độ ẩm hiện tại: **{humidity}%** - Khá khô, nên bật máy tạo ẩm!"
+                return f"Độ ẩm hiện tại là {humidity}% - Khá khô, nên bật máy tạo ẩm!"
             elif humidity > 70:
-                return f"Độ ẩm hiện tại: **{humidity}%** - Khá ẩm, nên chế độ tải sươi!"
+                return f"Độ ẩm hiện tại là {humidity}% - Khá ẩm!"
             else:
-                return f"Độ ẩm hiện tại: **{humidity}%** - Mức thoải mái!"
-        
+                return f"Độ ẩm hiện tại là {humidity}% - Mức thoải mái!"
+
         # Kiểm tra nhiệt độ
         if 'nhiệt độ' in message_lower or 'nóng' in message_lower or 'lạnh' in message_lower or 'bao nhiêu độ' in message_lower:
             temp = sensors['temperature']
             if temp > 30:
-                return f"Nhiệt độ hiện tại: **{temp}°C** - Khá nóng!"
+                return f"Nhiệt độ hiện tại là {temp}°C - Khá nóng!"
             elif temp < 20:
-                return f"Nhiệt độ hiện tại: **{temp}°C** - Khá lạnh!"
+                return f"Nhiệt độ hiện tại là {temp}°C - Khá lạnh!"
             else:
-                return f"Nhiệt độ hiện tại: **{temp}°C** - Nhiệt độ dễ chịu!"
-        
+                return f"Nhiệt độ hiện tại là {temp}°C - Nhiệt độ dễ chịu!"
+
         # Kiểm tra ánh sáng
         if 'ánh sáng' in message_lower or 'sáng' in message_lower or 'tối' in message_lower:
             light = sensors['light']
             if light < 100:
-                return f"Ánh sáng hiện tại: **{light} lux** - Khá tối!"
+                return f"Ánh sáng hiện tại là {light} Khá tối!"
             elif light > 500:
-                return f"Ánh sáng hiện tại: **{light} lux** - Rất sáng!"
+                return f"Ánh sáng hiện tại là {light} Rất sáng!{suffix}"
             else:
-                return f"Ánh sáng hiện tại: **{light} lux** - Ánh sáng vừa phải!"
-        
+                return f"Ánh sáng hiện tại là {light} Ánh sáng vừa phải!{suffix}"
+
         # Trả về tất cả sensor data
         return f"""🌡️ **Dữ liệu cảm biến:**
 • Nhiệt độ: {sensors['temperature']}°C
 • Độ ẩm: {sensors['humidity']}%
-• Ánh sáng: {sensors['light']} lux"""
+• Ánh sáng: {sensors['light']} lux{suffix}"""
 
     def _handle_set_value(self, message: str, entities: list) -> str:
         """Xử lý cài đặt giá trị (nhiệt độ điều hòa)"""
@@ -749,9 +765,6 @@ Trả lời ngắn gọn (tiếng Việt):""")
         }
         return mapping.get(location, location)
 
-    def _handle_context_response(self, message: str) -> str:
-        return None
-
     def _execute_device_command(self, device_type: str, location: str, action: bool) -> str:
         status = "bật" if action else "tắt"
         location_vn = self._get_location_vietnamese(location)
@@ -781,28 +794,26 @@ Trả lời ngắn gọn (tiếng Việt):""")
         return random.choice(responses)
 
     def _generate_default_response(self, user_message: str) -> str:
-        """Tạo câu trả lời mặc định hoặc dùng RAG"""
-        # Thử dùng RAG cho mọi câu hỏi
-        if self.rag_retriever and self.rag_llm:
+        msg = user_message.lower()
+        question_signals = [
+            'là gì', 'như nào', 'thế nào', 'tại sao', 'vì sao',
+            'ở đâu', 'bao nhiêu', 'khi nào', 'có không', 'what', 'how', 'why',
+            'tin tức', 'bài báo', 'thông tin', 'giải thích', 'cho biết'
+        ]
+        is_question = any(s in msg for s in question_signals) or len(user_message.split()) >= 6
+        if is_question and self.rag_retriever and self.rag_llm:
             try:
-                # Retrieve docs để check xem có kết quả không
                 docs = self.rag_retriever.invoke(user_message)
-                
-                # Nếu tìm thấy docs với similarity tốt → Dùng RAG
                 if docs:
                     answer = self._handle_news_query(user_message)
-                    # Chỉ fallback nếu có lỗi hệ thống
                     if "có lỗi xảy ra" not in answer.lower():
                         return answer
             except Exception as e:
                 error_msg = str(e)
-                # Kiểm tra quota exceeded
                 if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
                     print(f"⚠️ RAG quota exceeded, dùng fallback response")
                 else:
                     print(f"⚠️ RAG error in default response: {e}")
-        
-        # Fallback responses
         responses = [
             "Tôi chưa hiểu ý bạn. Bạn có thể nói rõ hơn không?",
             "Bạn có muốn xem tin tức ngày hôm nay không? ",
@@ -810,12 +821,9 @@ Trả lời ngắn gọn (tiếng Việt):""")
         ]
         return random.choice(responses)
 
-
-# Global assistant instance
 _assistant_instance = None
 
 def get_assistant(mqtt_handler=None):
-    """Lấy global assistant instance"""
     global _assistant_instance
     if _assistant_instance is None:
         _assistant_instance = Assistant(mqtt_handler)
