@@ -58,13 +58,13 @@ class Assistant:
         self._init_rag()
         
         self.knowledge_base = {
-            'xin chào': 'Xin chào! 👋 Tôi có thể giúp bạn điều khiển nhà thông minh!',
-            'hello': 'Hello! 👋 How can I help you?',
+            'xin chào': 'Xin chào! Tôi có thể giúp gì cho bạn!',
+            'hello': 'Hello! How can I help you?',
             'tên của bạn': 'Tôi là AI Smart Home Assistant!',
             'bạn là ai': 'Tôi là AI Smart Home Assistant, giúp bạn điều khiển nhà thông minh!',
-            'cảm ơn': 'Không có gì! 😊 Nếu cần giúp đỡ gì khác thì cứ hỏi tôi!',
-            'tạm biệt': 'Tạm biệt! 👋 Rất vui được gặp bạn!',
-            'bye': 'Goodbye! 👋',
+            'cảm ơn': 'Không có gì! Nếu cần giúp đỡ gì khác thì cứ hỏi tôi!',
+            'tạm biệt': 'Tạm biệt! Rất vui được gặp bạn!',
+            'bye': 'Goodbye!',
         }
         self.confirm_yes = ['có', 'được', 'ừ', 'đúng', 'bật']
         self.confirm_no = ['không', 'thôi', 'hủy', 'bỏ']
@@ -163,9 +163,9 @@ class Assistant:
                         with open(metadata_file, 'r', encoding='utf-8') as f:
                             metadata = json.load(f)
                         total = metadata.get('total_chunks', metadata.get('total_articles', '?'))
-                        print(f"✅ RAG sẵn sàng: {total} chunks (built: {metadata.get('build_time', '?')[:10]})")
+                        print(f"RAG sẵn sàng: {total} chunks (built: {metadata.get('build_time', '?')[:10]})")
                     else:
-                        print(f"✅ RAG sẵn sàng")
+                        print(f"RAG sẵn sàng")
                     
                     _mongo_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
                     self.mongo_client = MongoClient(_mongo_uri)
@@ -219,7 +219,7 @@ class Assistant:
                 max_output_tokens=2048
             )
             
-            print(f"✅ RAG sẵn sàng: {len(documents)} chunks")
+            print(f"RAG sẵn sàng: {len(documents)} chunks")
             
             # Auto-save FAISS index
             try:
@@ -265,7 +265,7 @@ class Assistant:
     def _handle_news_query(self, message: str) -> str:
         """Xử lý câu hỏi về tin tức bằng RAG"""
         if not self.rag_retriever or not self.rag_llm:
-            return "Xin lỗi, hệ thống tin tức hiện chưa sẵn sàng 😢"
+            return "Xin lỗi, hệ thống tin tức hiện chưa sẵn sàng"
         
         try:
             # ===== 1. Kiểm tra user hỏi về tin số mấy (từ list vừa show) =====
@@ -280,7 +280,7 @@ class Assistant:
                     }).sort('chunk_index', 1))
                     
                     if not chunks:
-                        return f"❌ Không tìm thấy nội dung bài '{title}'"
+                        return f"Không tìm thấy nội dung bài '{title}'"
                     full_content = "\n\n".join([c.get('chunk', '') for c in chunks])
                     prompt = ChatPromptTemplate.from_template("""
 Bạn là trợ lý tin tức thông minh.
@@ -374,9 +374,9 @@ Tóm tắt (tiếng Việt):""")
                             date_str = latest_date.strftime('%d/%m/%Y')
                         else:
                             date_str = str(latest_date)[:10]
-                        return f"⚠️ Không có tin tức {target_date.strftime('%d/%m/%Y')}. Tin mới nhất là ngày {date_str}."
+                        return f"Không có tin tức {target_date.strftime('%d/%m/%Y')}. Tin mới nhất là ngày {date_str}."
                     else:
-                        return "Xin lỗi, không có tin tức trong hệ thống 😢"
+                        return "Xin lỗi, không có tin tức trong hệ thống"
                 
                 articles_by_title = {}
                 for chunk in chunks:
@@ -395,18 +395,18 @@ Tóm tắt (tiếng Việt):""")
                 weekday_vn = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật']
                 day_name = weekday_vn[target_date.weekday()]
                 
-                response = f"📰 **Tin tức {day_name}, {date_str}**:\n\n"
+                response = f"**Tin tức {day_name}, {date_str}**:\n\n"
                 
                 for i, article in enumerate(display_list, 1):
                     response += f"{i}. {article['title']}\n"
                 
-                response += f"\n💡 Hỏi 'tin 1', 'tin 2'... để xem chi tiết bài nào!"
+                response += f"\n Hỏi 'tin 1', 'tin 2'... để xem chi tiết bài nào!"
                 
                 return response
             docs = self.rag_retriever.invoke(message)
             
             if not docs:
-                return "Xin lỗi, tôi không tìm thấy tin tức phù hợp 😢"
+                return "Xin lỗi, tôi không tìm thấy tin tức phù hợp"
             context = "\n\n".join([doc.page_content for doc in docs])
 
             is_detailed_question = any(word in message.lower() for word in [
@@ -463,11 +463,11 @@ Trả lời ngắn gọn (tiếng Việt):""")
                 answer = rag_chain.invoke(message)
 
                 if not is_detailed_question:
-                    self.context.last_news_list = docs[:5]    
+                    self.context.last_news_list = docs[:5]
             except Exception as llm_error:
                 error_msg = str(llm_error)
                 if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
-                    print(f"⚠️ Gemini quota exceeded, dùng fallback response với content")
+                    print(f"Gemini quota exceeded, dùng fallback response với content")
                     
                     is_today_query = any(word in message.lower() for word in ['hôm nay', 'tin hôm nay', 'tin tức hôm nay'])
 
@@ -475,31 +475,31 @@ Trả lời ngắn gọn (tiếng Việt):""")
                         if docs and len(docs) > 0:
                             best_article = docs[0]
                             best_title = best_article.metadata.get('title', 'Tin tức')
-                            return f"📰 **{best_title}**\n\n{best_article.page_content[:1500]}\n\n_(Tóm tắt bằng AI tạm thời không khả dụng do giới hạn quota)_"
+                            return f"**{best_title}**\n\n{best_article.page_content[:1500]}\n\n_(Tóm tắt bằng AI tạm thời không khả dụng do giới hạn quota)_"
 
                     titles = [doc.metadata.get('title', '') for doc in docs[:5] if doc.metadata.get('title')]
                     if titles:
                         self.context.last_news_list = docs[:5]
                         
-                        answer = "📰 Tin tức "
+                        answer = "Tin tức "
                         if is_today_query:
                             answer += "hôm nay:\n\n"
                         else:
                             answer += "nổi bật:\n\n"
                         for i, title in enumerate(titles, 1):
                             answer += f"{i}. {title}\n"
-                        answer += "\n💡 Hỏi 'tin 1 như nào?' hoặc 'bài 2 nói gì?' để xem chi tiết"
+                        answer += "\n Hỏi 'tin 1 như nào?' hoặc 'bài 2 nói gì?' để xem chi tiết"
                         return answer.strip()
                     else:
-                        return "Xin lỗi, không thể tạo tóm tắt lúc này 😢"
+                        return "Xin lỗi, không thể tạo tóm tắt lúc này"
                 else:
                     raise
             
             return answer
             
         except Exception as e:
-            print(f"❌ Lỗi RAG: {e}")
-            return "Xin lỗi, có lỗi xảy ra khi tra cứu tin tức 😢"
+            print(f"Lỗi RAG: {e}")
+            return "Xin lỗi, có lỗi xảy ra khi tra cứu tin tức"
 
     def get_response(self, user_message: str) -> str:
         message_lower = user_message.lower().strip()
@@ -526,7 +526,7 @@ Trả lời ngắn gọn (tiếng Việt):""")
             return self._handle_sensor_query(user_message)
         
         elif intent == 'control_device':
-            return """⚠️ Lệnh không hợp lệ! Vui lòng sử dụng đúng cú pháp """
+            return """Lệnh không hợp lệ! Vui lòng sử dụng đúng cú pháp """
         elif intent == 'greeting':
             word_count = len(user_message.split())
             if word_count <= 4 or confidence >= 0.5:
@@ -535,10 +535,10 @@ Trả lời ngắn gọn (tiếng Việt):""")
                 return self._generate_default_response(user_message)
         
         elif intent == 'farewell':
-            return "Tạm biệt! 👋 Chúc bạn một ngày tốt lành!"
+            return "Tạm biệt! Chúc bạn một ngày tốt lành!"
         
         elif intent == 'gratitude':
-            return "Không có gì! 😊 Tôi luôn sẵn sàng giúp bạn!"
+            return "Không có gì! Tôi luôn sẵn sàng giúp bạn!"
         
         elif intent == 'set_value':
             return self._handle_set_value(user_message, entities)
@@ -552,9 +552,9 @@ Trả lời ngắn gọn (tiếng Việt):""")
 
     def _handle_greeting(self) -> str:
         greetings = [
-            "Xin chào! 👋 Tôi có thể giúp bạn điều khiển nhà thông minh!",
-            "Chào bạn! 😊 Bạn muốn tôi giúp gì nào?",
-            "Hello! 👋 Tôi là Smart Home Assistant!",
+            "Xin chào! Tôi có thể giúp gì cho bạn?",
+            "Chào bạn! Bạn muốn tôi giúp gì nào?",
+            "Hello! Tôi là Smart Home Assistant!",
         ]
         return random.choice(greetings)
 
@@ -585,9 +585,9 @@ Trả lời ngắn gọn (tiếng Việt):""")
                 if self.mqtt:
                     self.mqtt.send_command('ac', location, True)
                     self.mqtt.send_command('ac_temp', location, temp)
-                return f"✅ Đã bật điều hòa {room_vn} ở {temp}°C!"
+                return f"Đã bật điều hòa {room_vn} ở {temp}°C!"
             else:
-                return "⚠️ Nhiệt độ phải từ 16°C đến 30°C!"
+                return "Nhiệt độ phải từ 16°C đến 30°C!"
 
         match = re.search(r'tăng\s+điều hòa\s+(phòng khách|phòng ngủ|phòng tắm)\s+(\d+)\s*độ', message_lower)
         if match:
@@ -606,7 +606,7 @@ Trả lời ngắn gọn (tiếng Việt):""")
             if self.mqtt:
                 self.mqtt.send_command('ac_temp', location, new_temp)
             
-            return f"✅ Đã tăng nhiệt độ điều hòa {room_vn} lên {new_temp}°C (+{delta}°C)"
+            return f"Đã tăng nhiệt độ điều hòa {room_vn} lên {new_temp}°C (+{delta}°C)"
 
         match = re.search(r'giảm\s+điều hòa\s+(phòng khách|phòng ngủ|phòng tắm)\s+(\d+)\s*độ', message_lower)
         if match:
@@ -626,7 +626,7 @@ Trả lời ngắn gọn (tiếng Việt):""")
             if self.mqtt:
                 self.mqtt.send_command('ac_temp', location, new_temp)
             
-            return f"✅ Đã giảm nhiệt độ điều hòa {room_vn} xuống {new_temp}°C (-{delta}°C)"
+            return f"Đã giảm nhiệt độ điều hòa {room_vn} xuống {new_temp}°C (-{delta}°C)"
         
         # ==================================================
         # BƯỚC 3: KHÔNG MATCH → TRẢ VỀ None
@@ -651,7 +651,7 @@ Trả lời ngắn gọn (tiếng Việt):""")
         states = self.mqtt.get_device_states()
         sensors = self.mqtt.get_sensor_data()
         
-        status_lines = ["📊 Trạng thái nhà thông minh:"]
+        status_lines = ["Trạng thái nhà thông minh:"]
         
         # Lights
         status_lines.append("💡Đèn:")
@@ -685,31 +685,31 @@ Trả lời ngắn gọn (tiếng Việt):""")
         if 'độ ẩm' in message_lower or 'ẩm' in message_lower:
             humidity = sensors['humidity']
             if humidity < 40:
-                return f"💧 Độ ẩm hiện tại: **{humidity}%** - Khá khô, nên bật máy tạo ẩm!"
+                return f"Độ ẩm hiện tại: **{humidity}%** - Khá khô, nên bật máy tạo ẩm!"
             elif humidity > 70:
-                return f"💧 Độ ẩm hiện tại: **{humidity}%** - Khá ẩm, nên chế độ tải sươi!"
+                return f"Độ ẩm hiện tại: **{humidity}%** - Khá ẩm, nên chế độ tải sươi!"
             else:
-                return f"💧 Độ ẩm hiện tại: **{humidity}%** - Mức thoải mái!"
+                return f"Độ ẩm hiện tại: **{humidity}%** - Mức thoải mái!"
         
         # Kiểm tra nhiệt độ
         if 'nhiệt độ' in message_lower or 'nóng' in message_lower or 'lạnh' in message_lower or 'bao nhiêu độ' in message_lower:
             temp = sensors['temperature']
             if temp > 30:
-                return f"🌡️ Nhiệt độ hiện tại: **{temp}°C** - Khá nóng!"
+                return f"Nhiệt độ hiện tại: **{temp}°C** - Khá nóng!"
             elif temp < 20:
-                return f"🌡️ Nhiệt độ hiện tại: **{temp}°C** - Khá lạnh!"
+                return f"Nhiệt độ hiện tại: **{temp}°C** - Khá lạnh!"
             else:
-                return f"🌡️ Nhiệt độ hiện tại: **{temp}°C** - Nhiệt độ dễ chịu!"
+                return f"Nhiệt độ hiện tại: **{temp}°C** - Nhiệt độ dễ chịu!"
         
         # Kiểm tra ánh sáng
         if 'ánh sáng' in message_lower or 'sáng' in message_lower or 'tối' in message_lower:
             light = sensors['light']
             if light < 100:
-                return f"☀️ Ánh sáng hiện tại: **{light} lux** - Khá tối!"
+                return f"Ánh sáng hiện tại: **{light} lux** - Khá tối!"
             elif light > 500:
-                return f"☀️ Ánh sáng hiện tại: **{light} lux** - Rất sáng!"
+                return f"Ánh sáng hiện tại: **{light} lux** - Rất sáng!"
             else:
-                return f"☀️ Ánh sáng hiện tại: **{light} lux** - Ánh sáng vừa phải!"
+                return f"Ánh sáng hiện tại: **{light} lux** - Ánh sáng vừa phải!"
         
         # Trả về tất cả sensor data
         return f"""🌡️ **Dữ liệu cảm biến:**
@@ -732,13 +732,13 @@ Trả lời ngắn gọn (tiếng Việt):""")
                     if self.mqtt:
                         success = self.mqtt.send_command('ac_temp', 'bedroom', value)
                         if success:
-                            return f"✅ Đã cài đặt điều hòa ở {value}°C!"
+                            return f"Đã cài đặt điều hòa ở {value}°C!"
                         else:
-                            return "❌ Không thể cài đặt nhiệt độ!"
+                            return "Không thể cài đặt nhiệt độ!"
                 else:
-                    return "⚠️ Nhiệt độ phải từ 16°C đến 30°C!"
+                    return "Nhiệt độ phải từ 16°C đến 30°C!"
         
-        return "🤔 Bạn muốn cài đặt gì? Ví dụ: 'Đặt điều hòa 25 độ'"
+        return "Bạn muốn cài đặt gì? Ví dụ: 'Đặt điều hòa 25 độ'"
 
     def _get_location_vietnamese(self, location: str) -> str:
         """Chuyển đổi tên location sang tiếng Việt"""
@@ -753,7 +753,6 @@ Trả lời ngắn gọn (tiếng Việt):""")
         return None
 
     def _execute_device_command(self, device_type: str, location: str, action: bool) -> str:
-        """Thực hiện lệnh điều khiển thiết bị"""
         status = "bật" if action else "tắt"
         location_vn = self._get_location_vietnamese(location)
         
@@ -766,9 +765,9 @@ Trả lời ngắn gọn (tiếng Việt):""")
         
         # Ngữ điệu tự nhiên hơn
         responses = [
-            f"Tôi đã {status} {device_vn} {location_vn} cho bạn rồi ạ 😊",
-            f"Đã {status} {device_vn} {location_vn} rồi nhé! ✅",
-            f"Dạ, {device_vn} {location_vn} đã được {status} rồi ạ 😊"
+            f"Tôi đã {status} {device_vn} {location_vn} cho bạn rồi ạ ",
+            f"Đã {status} {device_vn} {location_vn} rồi nhé! ",
+            f"Dạ, {device_vn} {location_vn} đã được {status} rồi ạ "
         ]
         
         # Gửi lệnh MQTT nếu có kết nối
@@ -805,9 +804,9 @@ Trả lời ngắn gọn (tiếng Việt):""")
         
         # Fallback responses
         responses = [
-            "🤔 Tôi chưa hiểu ý bạn. Bạn có thể nói rõ hơn không?",
-            "Bạn có muốn xem tin tức ngày hôm nay không? 📰",
-            "Bạn có cần tôi giúp gì không? 😊",
+            "Tôi chưa hiểu ý bạn. Bạn có thể nói rõ hơn không?",
+            "Bạn có muốn xem tin tức ngày hôm nay không? ",
+            "Bạn có cần tôi giúp gì không?",
         ]
         return random.choice(responses)
 

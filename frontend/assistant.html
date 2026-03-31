@@ -10,7 +10,10 @@
     <div class="chat-container">
         <div class="chat-header">
             <div class="header-top">
-                <h1>🤖 AI Assistant</h1>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <a href="dashboard.html" class="back-btn" title="Quay lại Dashboard">←</a>
+                    <h1>🤖 AI Assistant</h1>
+                </div>
                 <div class="user-info">
                     <span id="username"></span>
                     <button id="logoutBtn" class="logout-btn">Đăng xuất</button>
@@ -21,18 +24,20 @@
 
         <div class="chat-messages" id="chatMessages">
             <div class="message bot-message">
-                <p>Xin chào! 👋 Tôi có thể giúp bạn điều gì?</p>
+                <p>Xin chào! Tôi có thể giúp bạn điều gì?</p>
             </div>
         </div>
 
         <div class="chat-input-area">
+            <button id="micBtn" class="mic-btn" title="Nhấn để nói">🎤</button>
             <input 
                 type="text" 
                 id="messageInput" 
                 class="chat-input" 
-                placeholder="Nhập tin nhắn của bạn..."
+                placeholder="Nhập tin nhắn hoặc nhấn 🎤 để nói..."
                 autocomplete="off"
             >
+            <button id="ttsBtn" class="tts-btn" title="Bật/tắt đọc câu trả lời">🔊</button>
             <button id="sendBtn" class="send-btn">Gửi</button>
         </div>
     </div>

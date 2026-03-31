@@ -66,6 +66,21 @@ body {
 .logout-btn:hover { background: rgba(245,101,101,0.1); border-color: #fc8181; }
 .chat-header p { font-size: 13px; color: #8ea4c8; margin: 0; }
 
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 11px;
+    border: 1.5px solid rgba(142,164,200,0.4);
+    border-radius: 7px;
+    color: #8ea4c8;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.back-btn:hover { background: rgba(142,164,200,0.1); border-color: #8ea4c8; color: #c8d8f0; }
+
 /* ─── MESSAGES ────────────────────────────────────── */
 .chat-messages {
     flex: 1;
@@ -153,6 +168,34 @@ body {
 }
 .send-btn:hover { background: #1f3060; transform: translateY(-1px); }
 .send-btn:active { transform: translateY(0); }
+
+/* ─── MIC & TTS BUTTONS ───────────────────────────── */
+.mic-btn, .tts-btn {
+    padding: 11px 14px;
+    border: 1.5px solid #e4e8f0;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background: #f9fafc;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.mic-btn:hover { background: #eef0f5; border-color: #c0c8d8; }
+.mic-btn.recording {
+    background: #fee2e2;
+    border-color: #f87171;
+    animation: pulse-mic 1s ease-in-out infinite;
+}
+@keyframes pulse-mic {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.4); }
+    50%       { box-shadow: 0 0 0 7px rgba(248,113,113,0); }
+}
+.tts-btn { color: #4a5568; }
+.tts-btn.active {
+    background: #ebf8ff;
+    border-color: #63b3ed;
+    color: #2b6cb0;
+}
 
 /* ─── RESPONSIVE ──────────────────────────────────── */
 @media (max-width: 600px) {

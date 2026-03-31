@@ -24,7 +24,7 @@ function loadUserInfo() {
     if (userData) {
         document.getElementById('username').textContent = userData.username;
     } else {
-        window.location.href = 'login.html';
+        window.location.href = 'login.html?_=' + Date.now();
     }
 }
 
@@ -46,7 +46,7 @@ function initDeviceStates() {
 }
 
 function startDeviceUpdates() {
-    setInterval(fetchDeviceStates, 3000);
+    // setInterval(fetchDeviceStates, 3000); // TODO: bật lại khi dùng MQTT
 }
 
 function updateDeviceUI() {
@@ -132,7 +132,7 @@ function sendCommand(type, location, value) {
 
 function startSensorUpdates() {
     updateSensors();
-    setInterval(updateSensors, 5000);
+    setInterval(updateSensors, 10 * 60 * 1000); // cập nhật thời tiết mỗi 10 phút
 }
 
 function updateSensors() {
@@ -153,7 +153,6 @@ function updateSensors() {
                 const badge = document.getElementById('sensor-source-badge');
                 if (badge) {
                     if (data.source === 'weather') {
-                        badge.textContent = '🌤️ WeatherAPI';
                         badge.title = 'Dữ liệu từ WeatherAPI (MQTT chưa kết nối)';
                         badge.style.color = '#f5a623';
                     } else {
@@ -228,7 +227,7 @@ function logout() {
         localStorage.removeItem('user_id');
         localStorage.removeItem('username');
         localStorage.removeItem('session_id');
-        window.location.href = 'login.html?logout=true';
+        window.location.href = 'login.html?_=' + Date.now();
     }
 }
 
