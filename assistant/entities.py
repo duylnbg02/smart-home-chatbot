@@ -14,7 +14,7 @@ class EntityExtractor:
             'temperature': r'\b\d{1,2}\s*(?:độ|do|°C|°|degree)',
         }
         
-        # Note: Smart home entity extraction removed - now using fixed_commands pattern in chatbot.py
+        # Note: Smart home entity extraction removed - now using fixed_commands pattern in assistant.py
         
         self.entity_types = list(self.patterns.keys())
     

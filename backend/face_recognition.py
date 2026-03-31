@@ -19,7 +19,7 @@ class FaceRecognitionHandler:
         if db is None:
             try:
                 from database.mongodb import get_db
-                db = get_db("chatbot")
+                db = get_db("assistant")
             except Exception:
                 db = None
 

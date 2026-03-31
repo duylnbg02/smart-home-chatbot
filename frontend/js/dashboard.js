@@ -167,8 +167,8 @@ function updateSensors() {
         .catch(error => console.log('Sensors not yet available:', error));
 }
 
-function toggleChatbot() {
-    const chatWindow = document.getElementById('chatbot-window');
+function toggleAssistant() {
+    const chatWindow = document.getElementById('assistant-window');
     if (chatWindow.style.display === 'none') {
         chatWindow.style.display = 'flex';
         document.getElementById('chat-input').focus();
@@ -211,7 +211,7 @@ function sendChatMessage(event) {
 }
 
 function displayMessage(text, sender) {
-    const messagesDiv = document.getElementById('chatbot-messages');
+    const messagesDiv = document.getElementById('assistant-messages');
     const messageEl = document.createElement('div');
     messageEl.className = `message ${sender}`;
     messageEl.textContent = text;

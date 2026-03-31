@@ -8,7 +8,7 @@ class MongoDB:
     _client = None
 
     @classmethod
-    def get_db(cls, name="chatbot"):
+    def get_db(cls, name="assistant"):
         if cls._client is None:
             uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
             try:
@@ -19,9 +19,9 @@ class MongoDB:
                 return None
         return cls._client[name]
     
-def get_db(name="chatbot"):
+def get_db(name="assistant"):
     return MongoDB.get_db(name)
 
-def get_col(col_name, db_name="chatbot"):
+def get_col(col_name, db_name="assistant"):
     db = get_db(db_name)
     return db[col_name] if db is not None else None

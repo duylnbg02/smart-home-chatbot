@@ -22,7 +22,7 @@ def init_database():
         print(f"❌ Lỗi kết nối MongoDB: {e}")
         return False
     
-    db = client['chatbot']
+    db = client['assistant']
     if 'users' not in db.list_collection_names():
         db.create_collection('users')
     

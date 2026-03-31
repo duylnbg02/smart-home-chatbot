@@ -4,7 +4,7 @@ import uuid, numpy as np, logging
 from PIL import Image
 from backend.constants import APP_HOST, APP_PORT, DEBUG, CORS_ORIGINS
 from backend.mqtt_handler import get_mqtt_handler, init_mqtt
-from backend.chatbot import get_chatbot
+from backend.assistant import get_assistant
 from database.mongodb import get_db
 from backend.services import ChatHistoryService
 from backend.auth import AuthHandler
@@ -13,11 +13,11 @@ from backend.weather_service import get_weather_service
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": CORS_ORIGINS}})
 
-db = get_db("chatbot")
+db = get_db("assistant")
 chat_service = ChatHistoryService(db)
 mqtt_handler = get_mqtt_handler()
 init_mqtt()
-chatbot = get_chatbot(mqtt_handler)
+assistant = get_assistant(mqtt_handler)
 auth = AuthHandler(db)
 weather_service = get_weather_service()
 
@@ -80,8 +80,8 @@ def chat():
         if not data or 'message' not in data:
             return jsonify({'error': 'Missing message'}), 400
         msg, uid, sid = data['message'].strip(), data.get('user_id', 'anonymous'), data.get('session_id', str(uuid.uuid4()))
-        nlp = chatbot.nlp.process(msg)
-        reply = chatbot.get_response(msg)
+        nlp = assistant.nlp.process(msg)
+        reply = assistant.get_response(msg)
         if chat_service:
             chat_service.save_message(uid, sid, msg, reply, nlp['intent']['type'], nlp['entities'])
         return jsonify({'reply': reply, 'intent': nlp['intent']['type'], 'session_id': sid}), 200

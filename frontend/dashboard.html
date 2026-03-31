@@ -67,7 +67,7 @@
                 <!-- Đèn Nhà Tắm -->
                 <div class="device-card">
                     <div class="device-header">
-                        <h3>💡 Đèn Nhà Tắm</h3>
+                        <h3>💡 Đèn Phòng Tắm</h3>
                     </div>
                     <div class="device-body">
                         <div class="light-control">
@@ -139,16 +139,16 @@
         </main>
     </div>
 
-    <!-- Chatbot Widget -->
-    <div id="chatbot-widget" class="chatbot-widget">
-        <button class="chatbot-toggle" onclick="toggleChatbot()">
-            <span class="chatbot-icon">💬</span>
+    <!-- Assistant Widget -->
+    <div id="assistant-widget" class="assistant-widget">
+        <button class="assistant-toggle" onclick="toggleAssistant()">
+            <span class="assistant-icon">💬</span>
         </button>
         
-        <div class="chatbot-window" id="chatbot-window" style="display: none;">
-            <div class="chatbot-header">
-                <div class="chatbot-header-left">
-                    <div class="chatbot-logo">
+        <div class="assistant-window" id="assistant-window" style="display: none;">
+            <div class="assistant-header">
+                <div class="assistant-header-left">
+                    <div class="assistant-logo">
                         <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
                             <circle cx="18" cy="18" r="17" fill="#1f3060" stroke="#7b9cdc" stroke-width="1.5"/>
                             <rect x="9" y="12" width="18" height="13" rx="4" fill="#7b9cdc" opacity="0.18"/>
@@ -164,22 +164,22 @@
                     </div>
                     <div>
                         <h3>Chat với AI</h3>
-                        <span class="chatbot-header-sub">Smart Home Assistant</span>
+                        <span class="assistant-header-sub">Smart Home Assistant</span>
                     </div>
                 </div>
-                <div class="chatbot-header-actions">
-                    <a href="chatbot.html" class="chatbot-open-btn" title="Mở trang chat đầy đủ" target="_blank">
+                <div class="assistant-header-actions">
+                    <a href="assistant.html" class="assistant-open-btn" title="Mở trang chat đầy đủ" target="_blank">
                         <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
                             <path d="M11 3H17V9" stroke="#8ea4c8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M17 3L9 11" stroke="#8ea4c8" stroke-width="1.6" stroke-linecap="round"/>
                             <path d="M8 5H4C3.45 5 3 5.45 3 6V16C3 16.55 3.45 17 4 17H14C14.55 17 15 16.55 15 16V12" stroke="#8ea4c8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </a>
-                    <button class="close-btn" onclick="toggleChatbot()">×</button>
+                    <button class="close-btn" onclick="toggleAssistant()">×</button>
                 </div>
             </div>
-            <div class="chatbot-messages" id="chatbot-messages"></div>
-            <div class="chatbot-input">
+            <div class="assistant-messages" id="assistant-messages"></div>
+            <div class="assistant-input">
                 <form onsubmit="sendChatMessage(event)">
                     <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." required>
                     <button type="submit">Gửi</button>

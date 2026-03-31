@@ -8,7 +8,7 @@ class MQTTHandler:
     def __init__(self):
         self.broker = os.getenv('MQTT_BROKER', 'caa7699a09b24a26b5b945f5db6af243.s1.eu.hivemq.cloud')
         self.port = int(os.getenv('MQTT_PORT', '8883'))
-        self.client = mqtt.Client(client_id='chatbot-server')
+        self.client = mqtt.Client(client_id='assistant-server')
         self.client.tls_set(cert_reqs=mqtt.ssl.CERT_REQUIRED, tls_version=mqtt.ssl.PROTOCOL_TLSv1_2)
         self.client.username_pw_set(os.getenv('MQTT_USERNAME'), os.getenv('MQTT_PASSWORD'))  
         self.client.on_connect = self.on_connect

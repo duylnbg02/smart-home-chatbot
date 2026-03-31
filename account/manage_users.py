@@ -2,7 +2,7 @@ import hashlib, secrets, getpass
 from pymongo import MongoClient
 from datetime import datetime
 
-db = MongoClient("mongodb://localhost:27017")["chatbot"]
+db = MongoClient("mongodb://localhost:27017")["assistant"]
 users_col = db["users"]
 
 def hash_pw(password):
