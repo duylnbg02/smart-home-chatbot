@@ -6,7 +6,6 @@ const logoutBtn = document.getElementById('logoutBtn');
 
 const API_BASE_URL = 'http://localhost:5000';
 
-// Check login when page loads
 window.addEventListener('load', () => {
     checkAuth();
 });
@@ -16,23 +15,17 @@ function checkAuth() {
     const username = localStorage.getItem('username');
     
     if (!token) {
-        // Not logged in, redirect to login
         window.location.href = 'login.html';
         return;
     }
-    
-    // Show username
     if (username && usernameSpan) {
         usernameSpan.textContent = `👤 ${username}`;
     }
 }
 
-// Logout
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
         const token = localStorage.getItem('authToken');
-        
-        // Optional: notify backend
         if (token) {
             fetch(`${API_BASE_URL}/logout`, {
                 method: 'POST',
@@ -40,8 +33,7 @@ if (logoutBtn) {
                 body: JSON.stringify({ token })
             }).catch(() => {});
         }
-        
-        // Clear storage and redirect
+
         localStorage.removeItem('authToken');
         localStorage.removeItem('userId');
         localStorage.removeItem('username');
@@ -49,10 +41,7 @@ if (logoutBtn) {
     });
 }
 
-// Gửi tin nhắn khi nhấn nút Gửi
 sendBtn.addEventListener('click', sendMessage);
-
-// Gửi tin nhắn khi nhấn Enter
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         sendMessage();
@@ -60,19 +49,15 @@ messageInput.addEventListener('keypress', (e) => {
 });
 
 async function sendMessage() {
-    const message = messageInput.value.trim();
-    
+    const message = messageInput.value.trim();  
     if (!message) return;
 
-    // Hiển thị tin nhắn của người dùng
     displayMessage(message, 'user');
     messageInput.value = '';
 
-    // Get auth data
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('authToken');
 
-    // Gửi tin nhắn đến backend
     try {
         const response = await fetch(`${API_BASE_URL}/chat`, {
             method: 'POST',
@@ -105,7 +90,5 @@ function displayMessage(text, sender) {
     p.style.whiteSpace = 'pre-wrap';
     messageDiv.appendChild(p);
     chatMessages.appendChild(messageDiv);
-    
-    // Cuộn xuống cuối cùng
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }

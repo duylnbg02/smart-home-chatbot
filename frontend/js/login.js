@@ -1,22 +1,17 @@
-// API endpoints
 const API_BASE_URL = 'http://localhost:5000';
 
-// Check if user is already logged in - redirect to dashboard
 window.addEventListener('load', () => {
-    // Nếu URL có ?logout=true → clear everything
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('logout') === 'true') {
         localStorage.clear();
-        // Xóa query param
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
     }
-    
-    // Nếu user đã login → redirect dashboard
+
     const user = localStorage.getItem('user');
     if (user) {
         try {
-            JSON.parse(user); // validate JSON
+            JSON.parse(user); 
             window.location.href = 'dashboard.html';
         } catch (e) {
             localStorage.removeItem('user');
@@ -24,7 +19,6 @@ window.addEventListener('load', () => {
     }
 });
 
-// DOM elements
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
 const loginForm = document.getElementById('loginForm');
@@ -34,34 +28,27 @@ const canvas = document.getElementById('canvas');
 const startCameraBtn = document.getElementById('startCameraBtn');
 const stopCameraBtn = document.getElementById('stopCameraBtn');
 const captureFaceBtn = document.getElementById('captureFaceBtn');
-const faceMessage = document.getElementById('faceMessage');
 const faceStatus = document.getElementById('faceStatus');
 const loadingSpinner = document.getElementById('loadingSpinner');
 
 let cameraStream = null;
 let isCameraActive = false;
 
-// Tab switching
 tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         const tabName = btn.dataset.tab;
 
-        // Remove active class from all tabs
         tabBtns.forEach(b => b.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
 
-        // Add active class to clicked tab
         btn.classList.add('active');
         document.getElementById(`${tabName}-tab`).classList.add('active');
 
-        // Stop camera when switching away from face tab
         if (tabName !== 'face' && cameraStream) {
             stopCamera();
         }
     });
 });
-
-// ============ Credentials Login ============
 
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -88,7 +75,7 @@ loginForm.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (response.ok) {
-            showMessage(credentialsMessage, '✅ Đăng nhập thành công!', 'success');
+            showMessage(credentialsMessage, 'Đăng nhập thành công!', 'success');
             saveAuthData(data);
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
@@ -104,24 +91,16 @@ loginForm.addEventListener('submit', async (e) => {
     }
 });
 
-// ============ Face Recognition ============
+startCameraBtn.addEventListener('click', () => { startCamera();});
 
-startCameraBtn.addEventListener('click', () => {
-    startCamera();
-});
+stopCameraBtn.addEventListener('click', () => { stopCamera(); });
 
-stopCameraBtn.addEventListener('click', () => {
-    stopCamera();
-});
-
-captureFaceBtn.addEventListener('click', () => {
-    captureFace();
-});
+captureFaceBtn.addEventListener('click', () => { captureFace(); });
 
 async function startCamera() {
     try {
         cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 320, height: 240, facingMode: 'user' }
+            video: { width: 640, height: 480, facingMode: 'user' }
         });
 
         webcam.srcObject = cameraStream;
@@ -131,11 +110,11 @@ async function startCamera() {
         stopCameraBtn.style.display = 'block';
         captureFaceBtn.style.display = 'block';
 
-        faceStatus.textContent = '📹 Camera đang hoạt động';
-        faceStatus.className = 'face-status info';
+        const fs = document.getElementById('faceStatus');
+        if (fs) { fs.textContent = 'Camera đang hoạt động'; fs.className = 'face-status info'; }
     } catch (error) {
-        faceStatus.textContent = '❌ Không thể truy cập camera: ' + error.message;
-        faceStatus.className = 'face-status error';
+        const fs = document.getElementById('faceStatus');
+        if (fs) { fs.textContent = 'Không thể truy cập camera: ' + error.message; fs.className = 'face-status error'; }
     }
 }
 
@@ -150,29 +129,34 @@ function stopCamera() {
     startCameraBtn.style.display = 'block';
     stopCameraBtn.style.display = 'none';
     captureFaceBtn.style.display = 'none';
-    faceStatus.textContent = '';
-    faceStatus.className = 'face-status';
+    const fs = document.getElementById('faceStatus');
+    if (fs) { fs.textContent = ''; fs.className = 'face-status'; }
 }
 
 async function captureFace() {
+    const faceStatusEl = document.getElementById('faceStatus');
+
+    function setStatus(text, type) {
+        if (faceStatusEl) {
+            faceStatusEl.textContent = text;
+            faceStatusEl.className = 'face-status' + (type ? ' ' + type : '');
+        }
+    }
+
     if (!isCameraActive) {
-        showMessage(faceMessage, 'Camera chưa bật', 'error');
+        setStatus('❌ Camera chưa bật', 'error');
         return;
     }
 
-    // Draw webcam frame to canvas
     const ctx = canvas.getContext('2d');
     canvas.width = webcam.videoWidth;
     canvas.height = webcam.videoHeight;
     ctx.drawImage(webcam, 0, 0);
-
-    // Convert canvas to blob
     canvas.toBlob(async (blob) => {
-        showLoading(true);
-        faceStatus.textContent = '⏳ Đang nhận diện khuôn mặt...';
-        faceStatus.className = 'face-status info';
-
         try {
+            showLoading(true);
+            setStatus('⏳ Đang nhận diện khuôn mặt...', 'info');
+
             const formData = new FormData();
             formData.append('image', blob, 'face.png');
 
@@ -184,31 +168,22 @@ async function captureFace() {
             const data = await response.json();
 
             if (response.ok) {
-                faceStatus.textContent = '✅ Nhận diện thành công!';
-                faceStatus.className = 'face-status success';
-                showMessage(faceMessage, '✅ Đăng nhập bằng khuôn mặt thành công!', 'success');
-                
+                setStatus('✅ Nhận diện thành công!', 'success');
                 saveAuthData(data);
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
                 }, 1000);
             } else {
-                faceStatus.textContent = '❌ ' + (data.error || 'Nhận diện thất bại');
-                faceStatus.className = 'face-status error';
-                showMessage(faceMessage, data.error || 'Không nhận diện được khuôn mặt', 'error');
+                setStatus('❌ ' + (data.error || 'Không nhận diện được khuôn mặt'), 'error');
             }
         } catch (error) {
-            console.error('Error:', error);
-            faceStatus.textContent = '❌ Lỗi: ' + error.message;
-            faceStatus.className = 'face-status error';
-            showMessage(faceMessage, 'Lỗi kết nối: ' + error.message, 'error');
+            console.error('captureFace error:', error);
+            setStatus('❌ Lỗi: ' + error.message, 'error');
         } finally {
             showLoading(false);
         }
     }, 'image/png');
 }
-
-// ============ Utilities ============
 
 function showMessage(element, text, type) {
     element.textContent = text;
@@ -216,7 +191,8 @@ function showMessage(element, text, type) {
 }
 
 function showLoading(show) {
-    loadingSpinner.style.display = show ? 'flex' : 'none';
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) spinner.style.display = show ? 'flex' : 'none';
 }
 
 function saveAuthData(data) {
@@ -232,7 +208,6 @@ function getAuthToken() {
     return localStorage.getItem('authToken');
 }
 
-// Clear messages on input
 document.getElementById('username').addEventListener('focus', () => {
     credentialsMessage.textContent = '';
     credentialsMessage.className = 'message';
@@ -241,11 +216,4 @@ document.getElementById('username').addEventListener('focus', () => {
 document.getElementById('password').addEventListener('focus', () => {
     credentialsMessage.textContent = '';
     credentialsMessage.className = 'message';
-});
-
-// Check if already logged in
-window.addEventListener('load', () => {
-    if (getAuthToken()) {
-        window.location.href = 'dashboard.html';
-    }
 });

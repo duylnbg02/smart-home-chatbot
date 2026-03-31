@@ -1,7 +1,5 @@
-// API Base URL
 const API_BASE = 'http://localhost:5000';
 
-// Device States
 const deviceStates = {
     lights: {
         living_room: false,
@@ -14,45 +12,44 @@ const deviceStates = {
     }
 };
 
-// Initialize
 document.addEventListener('DOMContentLoaded', function() {
     loadUserInfo();
     initDeviceStates();
     startSensorUpdates();
+    startDeviceUpdates();
 });
 
-// Load user info from localStorage
 function loadUserInfo() {
     const userData = JSON.parse(localStorage.getItem('user'));
     if (userData) {
         document.getElementById('username').textContent = userData.username;
     } else {
-        // Redirect to login if not authenticated
         window.location.href = 'login.html';
     }
 }
 
-// Initialize device states from backend
-function initDeviceStates() {
-    // Request initial states from backend
-    fetch(`${API_BASE}/devices/status`)
+function fetchDeviceStates() {
+    return fetch(`${API_BASE}/devices/status`)
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                // Update device states
-                if (data.devices) {
-                    deviceStates.lights = { ...deviceStates.lights, ...data.devices.lights };
-                    deviceStates.ac = { ...deviceStates.ac, ...data.devices.ac };
-                }
+            if (data.success && data.devices) {
+                deviceStates.lights = { ...deviceStates.lights, ...data.devices.lights };
+                deviceStates.ac    = { ...deviceStates.ac,    ...data.devices.ac };
                 updateDeviceUI();
             }
         })
-        .catch(error => console.log('Device status not yet available:', error));
+        .catch(error => console.log('Device status not available:', error));
 }
 
-// Update UI based on device states
+function initDeviceStates() {
+    fetchDeviceStates();
+}
+
+function startDeviceUpdates() {
+    setInterval(fetchDeviceStates, 3000);
+}
+
 function updateDeviceUI() {
-    // Update lights
     Object.keys(deviceStates.lights).forEach(light => {
         const btn = document.getElementById(`light-${light}`);
         if (btn) {
@@ -66,45 +63,31 @@ function updateDeviceUI() {
         }
     });
 
-    // Update AC
     const acBtn = document.getElementById('ac-bedroom');
     if (acBtn) {
         if (deviceStates.ac.bedroom) {
             acBtn.classList.add('on');
-            acBtn.textContent = 'Bật';
+            acBtn.querySelector('.ac-status').textContent = 'Bật';
         } else {
             acBtn.classList.remove('on');
-            acBtn.textContent = 'Tắt';
+            acBtn.querySelector('.ac-status').textContent = 'Tắt';
         }
     }
-
-    // Update temperature display
     document.getElementById('temp-bedroom').value = deviceStates.ac.temperature;
 }
 
-// Toggle Light
 function toggleLight(room) {
     deviceStates.lights[room] = !deviceStates.lights[room];
-    
-    // Send to backend/MQTT
     sendCommand('light', room, deviceStates.lights[room]);
-    
-    // Update UI
     updateDeviceUI();
 }
 
-// Toggle AC
 function toggleAC(room) {
     deviceStates.ac[room] = !deviceStates.ac[room];
-    
-    // Send to backend/MQTT
     sendCommand('ac', room, deviceStates.ac[room]);
-    
-    // Update UI
     updateDeviceUI();
 }
 
-// Increase Temperature
 function increaseTemp(room) {
     if (deviceStates.ac.temperature < 30) {
         deviceStates.ac.temperature++;
@@ -113,7 +96,6 @@ function increaseTemp(room) {
     }
 }
 
-// Decrease Temperature
 function decreaseTemp(room) {
     if (deviceStates.ac.temperature > 16) {
         deviceStates.ac.temperature--;
@@ -122,7 +104,6 @@ function decreaseTemp(room) {
     }
 }
 
-// Send command to backend
 function sendCommand(type, location, value) {
     const payload = {
         type: type,
@@ -149,32 +130,45 @@ function sendCommand(type, location, value) {
     .catch(error => console.error('Command error:', error));
 }
 
-// Start sensor updates (every 5 seconds)
 function startSensorUpdates() {
     updateSensors();
     setInterval(updateSensors, 5000);
 }
 
-// Update sensor readings
 function updateSensors() {
     fetch(`${API_BASE}/sensors/data`)
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.sensors) {
-                document.getElementById('temp-value').textContent = 
-                    data.sensors.temperature.toFixed(1) + '°C';
-                document.getElementById('humidity-value').textContent = 
-                    data.sensors.humidity.toFixed(1) + '%';
-                document.getElementById('light-value').textContent = 
-                    data.sensors.light + ' lux';
+            if (data.sensors) {
+                const s = data.sensors;
+                const temp = (typeof s.temperature === 'number') ? s.temperature : 0;
+                const humi = (typeof s.humidity === 'number') ? s.humidity : 0;
+                const light = (typeof s.light === 'number') ? s.light : 0;
+
+                document.getElementById('temp-value').textContent = temp.toFixed(1) + '°C';
+                document.getElementById('humidity-value').textContent = humi.toFixed(1) + '%';
+                document.getElementById('light-value').textContent = light.toLocaleString() + ' lux';
+
+                // Show source badge
+                const badge = document.getElementById('sensor-source-badge');
+                if (badge) {
+                    if (data.source === 'weather') {
+                        badge.textContent = '🌤️ WeatherAPI';
+                        badge.title = 'Dữ liệu từ WeatherAPI (MQTT chưa kết nối)';
+                        badge.style.color = '#f5a623';
+                    } else {
+                        badge.textContent = '📡 ESP32';
+                        badge.title = 'Dữ liệu từ cảm biến ESP32';
+                        badge.style.color = '#4caf50';
+                    }
+                }
             }
         })
         .catch(error => console.log('Sensors not yet available:', error));
 }
 
-// Chatbot Functions
-function toggleChatbot() {
-    const chatWindow = document.getElementById('chatbot-window');
+function toggleAssistant() {
+    const chatWindow = document.getElementById('assistant-window');
     if (chatWindow.style.display === 'none') {
         chatWindow.style.display = 'flex';
         document.getElementById('chat-input').focus();
@@ -188,14 +182,12 @@ function sendChatMessage(event) {
     
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
-    
+
     if (!message) return;
 
-    // Display user message
     displayMessage(message, 'user');
     input.value = '';
 
-    // Send to backend
     fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: {
@@ -219,28 +211,52 @@ function sendChatMessage(event) {
 }
 
 function displayMessage(text, sender) {
-    const messagesDiv = document.getElementById('chatbot-messages');
+    const messagesDiv = document.getElementById('assistant-messages');
     const messageEl = document.createElement('div');
     messageEl.className = `message ${sender}`;
     messageEl.textContent = text;
     messagesDiv.appendChild(messageEl);
-    
-    // Scroll to bottom
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
 // Logout
 function logout() {
     if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-        // Xóa toàn bộ localStorage
         localStorage.clear();
-        // Hoặc xóa từng item cụ thể
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         localStorage.removeItem('user_id');
         localStorage.removeItem('username');
         localStorage.removeItem('session_id');
-        // Redirect và clear cache
         window.location.href = 'login.html?logout=true';
     }
 }
+
+async function checkFaceRegistration() {
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId   = userData.user_id || localStorage.getItem('user_id');
+
+    try {
+        const noticeEl = document.getElementById('face-header-notice');
+        if (noticeEl) {
+            noticeEl.style.display = 'inline-block';
+            noticeEl.className = 'face-header-notice loading';
+        }
+
+        const res  = await fetch(`${API_BASE}/faces`);
+        const data = await res.json();
+
+        const alreadyRegistered = data.faces &&
+            data.faces.some(f => String(f.user_id) === String(userId));
+
+        if (alreadyRegistered && noticeEl) {
+            noticeEl.className = 'face-header-notice success';
+            noticeEl.textContent = '✅ Bạn đã đăng ký khuôn mặt';
+        }
+
+        setTimeout(() => { window.location.href = 'face-register.html'; }, 800);
+    } catch (e) {
+        window.location.href = 'face-register.html';
+    }
+}
+

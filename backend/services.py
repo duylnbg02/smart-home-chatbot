@@ -1,127 +1,55 @@
-"""
-Chat history service with MongoDB
-"""
 from datetime import datetime
-from typing import List, Dict, Optional
-try:
-    from bson.objectid import ObjectId
-except ImportError:
-    ObjectId = str
 
 class ChatHistoryService:
-    """
-    Service for managing chat history in MongoDB
-    """
-    
-    def __init__(self, db_connection):
-        """
-        Initialize chat history service
-        db_connection: MongoDB database instance
-        """
-        self.db = db_connection
-        self.collection = self.db['chat_history']
-        
-        # Create indexes
-        self._create_indexes()
-    
-    def _create_indexes(self):
-        """
-        Create database indexes for better performance
-        """
-        self.collection.create_index('user_id')
-        self.collection.create_index('session_id')
-        self.collection.create_index('created_at')
-    
-    def save_message(self, user_id: str, session_id: str, 
-                    user_message: str, bot_reply: str,
-                    intent: Optional[str] = None,
-                    entities: Optional[List] = None) -> str:
-        """
-        Save chat message to database
-        Returns: message_id
-        """
-        message_doc = {
-            'user_id': user_id,
-            'session_id': session_id,
-            'user_message': user_message,
-            'bot_reply': bot_reply,
-            'intent': intent,
-            'entities': entities or [],
-            'created_at': datetime.utcnow(),
-            'timestamp': datetime.utcnow().isoformat()
+    def __init__(self, db):
+        self.col = db['chat_history']
+        self.col.create_index([('user_id', 1), ('session_id', 1), ('created_at', 1)])
+
+    def save_message(self, uid, sid, msg, reply, intent=None, entities=None):
+        doc = {
+            'user_id': uid, 'session_id': sid, 'user_message': msg,
+            'bot_reply': reply, 'intent': intent, 'entities': entities or [],
+            'created_at': datetime.utcnow()
         }
-        
-        result = self.collection.insert_one(message_doc)
-        return str(result.inserted_id)
-    
-    def get_conversation(self, user_id: str, session_id: str, 
-                        limit: int = 50) -> List[Dict]:
-        """
-        Get conversation history for a session
-        """
-        messages = list(self.collection.find(
-            {'user_id': user_id, 'session_id': session_id},
-            {'_id': 1, 'user_message': 1, 'bot_reply': 1, 'created_at': 1, 'intent': 1}
+        return str(self.col.insert_one(doc).inserted_id)
+
+    def get_conversation(self, uid, sid, limit=50):
+        messages = list(self.col.find(
+            {'user_id': uid, 'session_id': sid},
+            {'_id': 1, 'user_message': 1, 'bot_reply': 1, 'created_at': 1}
         ).sort('created_at', 1).limit(limit))
         
-        # Convert ObjectId to string
-        for msg in messages:
-            msg['_id'] = str(msg['_id'])
-        
+        for m in messages: m['_id'] = str(m['_id'])
         return messages
-    
-    def get_user_sessions(self, user_id: str) -> List[Dict]:
-        """
-        Get all sessions for a user
-        """
-        sessions = self.collection.aggregate([
-            {'$match': {'user_id': user_id}},
+
+    def get_user_sessions(self, uid):
+        return list(self.col.aggregate([
+            {'$match': {'user_id': uid}},
             {'$group': {
                 '_id': '$session_id',
-                'message_count': {'$sum': 1},
-                'first_message': {'$min': '$created_at'},
-                'last_message': {'$max': '$created_at'}
+                'count': {'$sum': 1},
+                'last': {'$max': '$created_at'}
             }},
-            {'$sort': {'last_message': -1}}
-        ])
-        
-        return list(sessions)
-    
-    def delete_conversation(self, user_id: str, session_id: str) -> int:
-        """
-        Delete a conversation
-        """
-        result = self.collection.delete_many({
-            'user_id': user_id,
-            'session_id': session_id
-        })
-        
-        return result.deleted_count
-    
-    def get_statistics(self, user_id: str) -> Dict:
-        """
-        Get user statistics
-        """
-        stats = self.collection.aggregate([
-            {'$match': {'user_id': user_id}},
+            {'$sort': {'last': -1}}
+        ]))
+
+    def delete_conversation(self, uid, sid):
+        return self.col.delete_many({'user_id': uid, 'session_id': sid}).deleted_count
+
+    def get_statistics(self, uid):
+        stats = list(self.col.aggregate([
+            {'$match': {'user_id': uid}},
             {'$group': {
                 '_id': None,
-                'total_messages': {'$sum': 1},
-                'total_sessions': {'$addToSet': '$session_id'},
-                'first_message': {'$min': '$created_at'},
-                'last_message': {'$max': '$created_at'},
+                'total_msg': {'$sum': 1},
+                'sessions': {'$addToSet': '$session_id'},
                 'intents': {'$addToSet': '$intent'}
             }}
-        ])
-        
-        result = next(stats, None)
-        if result:
-            result['total_sessions'] = len(result['total_sessions'])
-            result.pop('_id', None)
-            return result
-        
+        ]))
+        if not stats: return {'total_msg': 0, 'total_sess': 0, 'intents': []}
+        res = stats[0]
         return {
-            'total_messages': 0,
-            'total_sessions': 0,
-            'intents': []
+            'total_msg': res['total_msg'],
+            'total_sess': len(res['sessions']),
+            'intents': [i for i in res['intents'] if i]
         }
