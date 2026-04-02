@@ -15,6 +15,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.messages import SystemMessage, HumanMessage
 from dotenv import load_dotenv
 
 # Load API keys
@@ -50,12 +51,17 @@ class ConversationContext:
 
 
 class Assistant:
+    _ROOM_MAP = {'phòng khách': 'living_room', 'phòng ngủ': 'bedroom', 'phòng tắm': 'bathroom'}
+    _LOCATION_VN = {'living_room': 'phòng khách', 'bedroom': 'phòng ngủ', 'bathroom': 'phòng tắm'}
+    _DEVICE_VN = {'light': 'đèn', 'ac': 'điều hòa'}
+
     def __init__(self, mqtt_handler=None):
         print("Khởi tạo Assistant")
         self.nlp = NLPPipeline()
         self.mqtt = mqtt_handler or get_mqtt_handler()
         self.context = ConversationContext()
         self._init_rag()
+        self._init_llm_tools()
         from backend.weather_service import get_weather_service
         self.weather_service = get_weather_service()
         
@@ -288,7 +294,58 @@ class Assistant:
             print(f"⚠️ Lỗi khi khởi tạo RAG: {e}")
             self.rag_retriever = None
             self.rag_llm = None
-    
+
+    def _init_llm_tools(self):
+        if not getattr(self, 'rag_llm', None):
+            self.llm_with_tools = None
+            self._tool_map = {}
+            return
+        try:
+            from langchain_core.tools import tool as lc_tool
+            ref = self
+
+            @lc_tool
+            def dieu_khien_thiet_bi(device: str, location: str, action: bool) -> str:
+                """Bật hoặc tắt thiết bị trong nhà.
+                device: 'light' (đèn) hoặc 'ac' (điều hòa).
+                location: 'living_room' (phòng khách), 'bedroom' (phòng ngủ), 'bathroom' (phòng tắm).
+                action: true để bật, false để tắt."""
+                return ref._execute_device_command(device, location, action)
+
+            @lc_tool
+            def dat_nhiet_do_dieu_hoa(location: str, temperature: int) -> str:
+                """Cài nhiệt độ điều hòa.
+                location: 'living_room', 'bedroom', 'bathroom'.
+                temperature: nhiệt độ từ 16 đến 30."""
+                if not 16 <= temperature <= 30:
+                    return "Nhiệt độ phải từ 16°C đến 30°C!"
+                if ref.mqtt:
+                    ref.mqtt.send_command('ac_temp', location, temperature)
+                loc_vn = ref._LOCATION_VN.get(location, location)
+                return f"Đã đặt điều hòa {loc_vn} ở {temperature}°C!"
+
+            @lc_tool
+            def lay_du_lieu_cam_bien() -> str:
+                """Lấy dữ liệu nhiệt độ, độ ẩm và ánh sáng hiện tại từ cảm biến."""
+                s = ref._get_sensor_data()
+                source = s.get('source', '')
+                suffix = f" (thời tiết {s.get('city', '')})" if source == 'weather' else ''
+                return f"Nhiệt độ: {s['temperature']}°C, Độ ẩm: {s['humidity']}%, Ánh sáng: {s['light']} lux{suffix}"
+
+            @lc_tool
+            def kiem_tra_trang_thai() -> str:
+                """Kiểm tra trạng thái bật/tắt của tất cả thiết bị trong nhà."""
+                return ref._get_all_status()
+
+            tools = [dieu_khien_thiet_bi, dat_nhiet_do_dieu_hoa, lay_du_lieu_cam_bien, kiem_tra_trang_thai]
+            self._tool_map = {t.name: t for t in tools}
+            self.llm_with_tools = self.rag_llm.bind_tools(tools)
+            print("✅ LLM tools sẵn sàng (4 tools)")
+        except Exception as e:
+            print(f"⚠️ Không thể khởi tạo LLM tools: {e}")
+            self.llm_with_tools = None
+            self._tool_map = {}
+
     def _is_news_query(self, message: str) -> bool:
         """Kiểm tra có phải câu hỏi về tin tức không"""
         # Dùng cụm từ cụ thể thay vì từ đơn quá ngắn như 'tin', 'ngày'
@@ -307,8 +364,9 @@ class Assistant:
             return "Xin lỗi, hệ thống tin tức hiện chưa sẵn sàng"
         
         try:
+            msg_lower = message.lower()
             # ===== 1. Kiểm tra user hỏi về tin số mấy (từ list vừa show) =====
-            number_match = re.search(r'(?:tin|bài)\s*(?:tức|báo)?\s*(\d+)', message.lower())
+            number_match = re.search(r'(?:tin|bài)\s*(?:tức|báo)?\s*(\d+)', msg_lower)
             if number_match and self.context.last_news_list:
                 news_index = int(number_match.group(1)) - 1  
                 if 0 <= news_index < len(self.context.last_news_list):
@@ -330,14 +388,14 @@ class Assistant:
                         return summary
                     except Exception as llm_error:
                         return f"**{title}**\n\n{full_content[:2048]}"
-            is_date_query = any(word in message.lower() for word in [
+            is_date_query = any(word in msg_lower for word in [
                 'hôm nay', 'hôm qua', 'ngày hôm nay', 'tin tức hôm nay',
                 'tin tức ngày', 'bài báo hôm nay', 'tin hôm nay'
             ])
-            
-            is_latest_query = any(word in message.lower() for word in [
+
+            is_latest_query = any(word in msg_lower for word in [
                 'mới nhất', 'gần đây', 'vừa rồi', 'đang nóng'
-            ]) and not any(word in message.lower() for word in ['như nào', 'thế nào', 'chi tiết', 'nói gì'])
+            ]) and not any(word in msg_lower for word in ['như nào', 'thế nào', 'chi tiết', 'nói gì'])
             
             if is_latest_query:
                 recent_chunks = list(self.articles_collection.find().sort('date', -1).limit(25))
@@ -366,7 +424,7 @@ class Assistant:
                 return response
             
             if is_date_query:
-                if 'hôm qua' in message.lower():
+                if 'hôm qua' in msg_lower:
                     target_date = datetime.now() - timedelta(days=1)
                 else:
                     specific_date = None
@@ -434,8 +492,8 @@ class Assistant:
                 return "Xin lỗi, tôi không tìm thấy tin tức phù hợp"
             context = "\n\n".join([doc.page_content for doc in docs])
 
-            is_detailed_question = any(word in message.lower() for word in [
-                'như nào', 'thế nào', 'chi tiết', 'cụ thể', 'thông tin', 
+            is_detailed_question = any(word in msg_lower for word in [
+                'như nào', 'thế nào', 'chi tiết', 'cụ thể', 'thông tin',
                 'nội dung', 'diễn biến', 'tình hình', 'giải thích'
             ])
 
@@ -463,9 +521,9 @@ class Assistant:
                 if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
                     print(f"Gemini quota exceeded, dùng fallback response với content")
                     
-                    is_today_query = any(word in message.lower() for word in ['hôm nay', 'tin hôm nay', 'tin tức hôm nay'])
+                    is_today_query = any(word in msg_lower for word in ['hôm nay', 'tin hôm nay', 'tin tức hôm nay'])
 
-                    if is_detailed_question or any(word in message.lower() for word in ['tin', 'bài', 'như nào', 'thế nào']):
+                    if is_detailed_question or any(word in msg_lower for word in ['tin', 'bài', 'như nào', 'thế nào']):
                         if docs and len(docs) > 0:
                             best_article = docs[0]
                             best_title = best_article.metadata.get('title', 'Tin tức')
@@ -511,6 +569,10 @@ class Assistant:
         if self._is_news_query(message_lower):
             return self._handle_news_query(user_message)
 
+        # Xử lý "tin 1", "bài 2"... nhanh — khi đã có danh sách tin
+        if self.context.last_news_list and re.search(r'^(?:tin|bài)\s*\d+', message_lower):
+            return self._handle_news_query(user_message)
+
         result = self.nlp.process(user_message)
         intent = result['intent']['type']
         confidence = result['intent']['confidence']
@@ -529,7 +591,7 @@ class Assistant:
             if word_count <= 4 or confidence >= 0.5:
                 return self._handle_greeting()
             else:
-                return self._generate_default_response(user_message)
+                return self._handle_with_llm_tools(user_message)
         
         elif intent == 'farewell':
             return "Tạm biệt! Chúc bạn một ngày tốt lành!"
@@ -544,7 +606,7 @@ class Assistant:
             for key, response in self.knowledge_base.items():
                 if key in message_lower:
                     return response
-            return self._generate_default_response(user_message)
+            return self._handle_with_llm_tools(user_message)
 
     def _handle_greeting(self) -> str:
         greetings = [
@@ -569,12 +631,7 @@ class Assistant:
         if match:
             room_vn = match.group(2)
             temp = int(match.group(3))
-            room_map = {
-                'phòng khách': 'living_room',
-                'phòng ngủ': 'bedroom',
-                'phòng tắm': 'bathroom'
-            }
-            location = room_map.get(room_vn, 'living_room')
+            location = self._ROOM_MAP.get(room_vn, 'living_room')
 
             if 16 <= temp <= 30:
                 if self.mqtt:
@@ -584,50 +641,20 @@ class Assistant:
             else:
                 return "Nhiệt độ phải từ 16°C đến 30°C!"
 
-        match = re.search(r'tăng\s+điều hòa\s+(phòng khách|phòng ngủ|phòng tắm)\s+(\d+)\s*độ', message_lower)
+        match = re.search(r'(tăng|giảm)\s+điều hòa\s+(phòng khách|phòng ngủ|phòng tắm)\s+(\d+)\s*độ', message_lower)
         if match:
-            room_vn = match.group(1)
-            delta = int(match.group(2))
-            
-            room_map = {'phòng khách': 'living_room', 'phòng ngủ': 'bedroom', 'phòng tắm': 'bathroom'}
-            location = room_map.get(room_vn, 'living_room')
+            direction, room_vn, delta = match.group(1), match.group(2), int(match.group(3))
+            location = self._ROOM_MAP.get(room_vn, 'living_room')
             current_temp = 25
             if self.mqtt:
-                states = self.mqtt.get_device_states()
-                current_temp = states['ac'].get('temperature', 25)
-            
-            new_temp = min(current_temp + delta, 30)
-            
+                current_temp = self.mqtt.get_device_states()['ac'].get('temperature', 25)
+            new_temp = min(current_temp + delta, 30) if direction == 'tăng' else max(current_temp - delta, 16)
             if self.mqtt:
                 self.mqtt.send_command('ac_temp', location, new_temp)
-            
-            return f"Đã tăng nhiệt độ điều hòa {room_vn} lên {new_temp}°C (+{delta}°C)"
-
-        match = re.search(r'giảm\s+điều hòa\s+(phòng khách|phòng ngủ|phòng tắm)\s+(\d+)\s*độ', message_lower)
-        if match:
-            room_vn = match.group(1)
-            delta = int(match.group(2))
-            
-            room_map = {'phòng khách': 'living_room', 'phòng ngủ': 'bedroom', 'phòng tắm': 'bathroom'}
-            location = room_map.get(room_vn, 'living_room')
-            
-            current_temp = 25
-            if self.mqtt:
-                states = self.mqtt.get_device_states()
-                current_temp = states['ac'].get('temperature', 25)
-            
-            new_temp = max(current_temp - delta, 16)
-            
-            if self.mqtt:
-                self.mqtt.send_command('ac_temp', location, new_temp)
-            
+            if direction == 'tăng':
+                return f"Đã tăng nhiệt độ điều hòa {room_vn} lên {new_temp}°C (+{delta}°C)"
             return f"Đã giảm nhiệt độ điều hòa {room_vn} xuống {new_temp}°C (-{delta}°C)"
-        
-        # ==================================================
-        # BƯỚC 3: KHÔNG MATCH → TRẢ VỀ None
-        # ==================================================
-        
-        # Không match bất kỳ pattern nào → để các handler khác xử lý
+
         return None
 
     def _handle_status_check(self, message: str, entities: list) -> str:
@@ -721,11 +748,11 @@ class Assistant:
         if 'ánh sáng' in message_lower or 'sáng' in message_lower or 'tối' in message_lower:
             light = sensors['light']
             if light < 100:
-                return f"Ánh sáng hiện tại là {light} Khá tối!"
+                return f"Ánh sáng hiện tại là {light} lux - Khá tối!"
             elif light > 500:
-                return f"Ánh sáng hiện tại là {light} Rất sáng!{suffix}"
+                return f"Ánh sáng hiện tại là {light} lux - Rất sáng!{suffix}"
             else:
-                return f"Ánh sáng hiện tại là {light} Ánh sáng vừa phải!{suffix}"
+                return f"Ánh sáng hiện tại là {light} lux - Ánh sáng vừa phải!{suffix}"
 
         # Trả về tất cả sensor data
         return f"""🌡️ **Dữ liệu cảm biến:**
@@ -757,25 +784,14 @@ class Assistant:
         return "Bạn muốn cài đặt gì? Ví dụ: 'Đặt điều hòa 25 độ'"
 
     def _get_location_vietnamese(self, location: str) -> str:
-        """Chuyển đổi tên location sang tiếng Việt"""
-        mapping = {
-            'living_room': 'phòng khách',
-            'bedroom': 'phòng ngủ',
-            'bathroom': 'phòng tắm',
-        }
-        return mapping.get(location, location)
+        return self._LOCATION_VN.get(location, location)
 
     def _execute_device_command(self, device_type: str, location: str, action: bool) -> str:
         status = "bật" if action else "tắt"
         location_vn = self._get_location_vietnamese(location)
         
-        # Map device names
-        device_map = {
-            'light': 'đèn',
-            'ac': 'điều hòa'
-        }
-        device_vn = device_map.get(device_type, device_type)
-        
+        device_vn = self._DEVICE_VN.get(device_type, device_type)
+
         # Ngữ điệu tự nhiên hơn
         responses = [
             f"Tôi đã {status} {device_vn} {location_vn} cho bạn rồi ạ ",
@@ -788,38 +804,64 @@ class Assistant:
             try:
                 self.mqtt.send_command(device_type, location, action)
             except Exception as mqtt_err:
-                print(f"⚠️ MQTT send_command thất bại ({device_type}/{location}): {mqtt_err}")
-                return f"⚠️ Lệnh đã gửi nhưng thiết bị không phản hồi. Kiểm tra kết nối MQTT!"
+                print(f"MQTT send_command thất bại ({device_type}/{location}): {mqtt_err}")
+                return f"Lệnh đã gửi nhưng thiết bị không phản hồi. Kiểm tra kết nối MQTT!"
         
         return random.choice(responses)
 
-    def _generate_default_response(self, user_message: str) -> str:
-        msg = user_message.lower()
-        question_signals = [
-            'là gì', 'như nào', 'thế nào', 'tại sao', 'vì sao',
-            'ở đâu', 'bao nhiêu', 'khi nào', 'có không', 'what', 'how', 'why',
-            'tin tức', 'bài báo', 'thông tin', 'giải thích', 'cho biết'
-        ]
-        is_question = any(s in msg for s in question_signals) or len(user_message.split()) >= 6
-        if is_question and self.rag_retriever and self.rag_llm:
-            try:
-                docs = self.rag_retriever.invoke(user_message)
-                if docs:
-                    answer = self._handle_news_query(user_message)
-                    if "có lỗi xảy ra" not in answer.lower():
-                        return answer
-            except Exception as e:
-                error_msg = str(e)
-                if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
-                    print(f"⚠️ RAG quota exceeded, dùng fallback response")
-                else:
-                    print(f"⚠️ RAG error in default response: {e}")
-        responses = [
+    def _handle_with_llm_tools(self, user_message: str) -> str:
+        """Hybrid fallback: LLM tự quyết định gọi tool hay trả lời tự do."""
+        if not getattr(self, 'llm_with_tools', None):
+            return self._simple_fallback()
+        try:
+            messages = [
+                SystemMessage(content=(
+                    "Bạn là trợ lý nhà thông minh. "
+                    "Nếu câu liên quan đến điều khiển thiết bị hoặc cảm biến, hãy gọi tool phù hợp. "
+                    "Hỗ trợ đồng thời nhiều lệnh (ví dụ: bật đèn và tắt điều hòa). "
+                    "Với câu không liên quan đến nhà thông minh, trả lời ngắn gọn bằng tiếng Việt. "
+                    "KHÔNG bắt đầu bằng lời chào."
+                )),
+                HumanMessage(content=user_message),
+            ]
+            response = self.llm_with_tools.invoke(messages)
+
+            if not response.tool_calls:
+                content = response.content
+                # Gemini với bind_tools đôi khi trả content là list thay vì str
+                if isinstance(content, list):
+                    content = ' '.join(
+                        c.get('text', str(c)) if isinstance(c, dict) else str(c)
+                        for c in content
+                    )
+                return str(content).strip() or self._simple_fallback()
+
+            # Thực thi tất cả tool calls (hỗ trợ câu lệnh kép)
+            results = []
+            for tc in response.tool_calls:
+                fn = self._tool_map.get(tc['name'])
+                if fn:
+                    try:
+                        result = fn.invoke(tc['args'])
+                        results.append(str(result))
+                    except Exception as te:
+                        print(f"LLM tools error: {te}")
+            return "\n".join(results) if results else self._simple_fallback()
+
+        except Exception as e:
+            err = str(e)
+            if "RESOURCE_EXHAUSTED" in err or "429" in err:
+                print("LLM tools quota exceeded")
+            else:
+                print(f"LLM tools error: {e}")
+            return self._simple_fallback()
+
+    def _simple_fallback(self) -> str:
+        return random.choice([
             "Tôi chưa hiểu ý bạn. Bạn có thể nói rõ hơn không?",
-            "Bạn có muốn xem tin tức ngày hôm nay không? ",
+            "Bạn có muốn xem tin tức ngày hôm nay không?",
             "Bạn có cần tôi giúp gì không?",
-        ]
-        return random.choice(responses)
+        ])
 
 _assistant_instance = None
 

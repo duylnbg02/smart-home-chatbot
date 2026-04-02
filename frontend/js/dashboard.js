@@ -46,7 +46,7 @@ function initDeviceStates() {
 }
 
 function startDeviceUpdates() {
-    // setInterval(fetchDeviceStates, 3000); // TODO: bật lại khi dùng MQTT
+    setInterval(fetchDeviceStates, 3000);
 }
 
 function updateDeviceUI() {

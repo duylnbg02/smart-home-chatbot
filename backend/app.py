@@ -78,7 +78,7 @@ def chat():
             return jsonify({'error': 'Missing message'}), 400
         msg, uid, sid = data['message'].strip(), data.get('user_id', 'anonymous'), data.get('session_id', str(uuid.uuid4()))
         nlp = assistant.nlp.process(msg)
-        reply = assistant.get_response(msg)
+        reply = str(assistant.get_response(msg))
         if chat_service:
             chat_service.save_message(uid, sid, msg, reply, nlp['intent']['type'], nlp['entities'])
         return jsonify({'reply': reply, 'intent': nlp['intent']['type'], 'session_id': sid}), 200
