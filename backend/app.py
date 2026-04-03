@@ -30,7 +30,6 @@ def login():
         res = auth.login_with_credentials(data.get('username'), data.get('password'))
         return jsonify(res), (200 if res['success'] else 401)
     except Exception as e:
-        print(f"❌ /login error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/face-login', methods=['POST'])
@@ -42,7 +41,6 @@ def face_login():
         res = auth.login_with_face(np.array(img))
         return jsonify(res), (200 if res['success'] else 401)
     except Exception as e:
-        print(f"❌ /face-login error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/register-face', methods=['POST'])
@@ -61,7 +59,6 @@ def register_face():
         )
         return jsonify(res), (200 if res['success'] else 400)
     except Exception as e:
-        print(f"❌ /register-face error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/verify-token', methods=['POST'])
@@ -81,12 +78,11 @@ def chat():
             return jsonify({'error': 'Missing message'}), 400
         msg, uid, sid = data['message'].strip(), data.get('user_id', 'anonymous'), data.get('session_id', str(uuid.uuid4()))
         nlp = assistant.nlp.process(msg)
-        reply = assistant.get_response(msg)
+        reply = str(assistant.get_response(msg))
         if chat_service:
             chat_service.save_message(uid, sid, msg, reply, nlp['intent']['type'], nlp['entities'])
         return jsonify({'reply': reply, 'intent': nlp['intent']['type'], 'session_id': sid}), 200
     except Exception as e:
-        print(f"❌ /chat error: {e}")
         return jsonify({'reply': 'Lỗi xử lý', 'error': str(e)}), 500
 
 @app.route('/history/<user_id>/<session_id>', methods=['GET'])
@@ -118,7 +114,6 @@ def get_sensors():
         sensor_data = mqtt_handler.get_sensor_data()
         connected = mqtt_handler.is_connected
         source = 'mqtt'
-        # Fall back to WeatherAPI when MQTT not connected or no data
         if not connected or (sensor_data['temperature'] == 0 and sensor_data['humidity'] == 0):
             weather = weather_service.get_current()
             if weather:
@@ -140,7 +135,6 @@ def get_weather():
             return jsonify({'success': True, 'weather': data}), 200
         return jsonify({'success': False, 'message': 'Không lấy được dữ liệu thời tiết'}), 503
     except Exception as e:
-        print(f'❌ /weather error: {e}')
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/health')
@@ -154,7 +148,6 @@ def list_faces():
         faces = FaceRecognitionHandler(db=db).list_registered_faces()
         return jsonify({'faces': faces}), 200
     except Exception as e:
-        print(f"❌ /faces error: {e}")
         return jsonify({'faces': [], 'error': str(e)}), 500
 
 if __name__ == '__main__':
